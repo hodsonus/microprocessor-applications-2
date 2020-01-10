@@ -50,3 +50,13 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+/.metadata/
+
+# CCS related files
+Release/*
+.xdchelp
+config/*
+.launches/*
+.jxbrowser-data/*
+RemoteSystemsTempFiles/*
+.launches/*
