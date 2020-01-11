@@ -59,4 +59,4 @@ config/*
 .launches/*
 .jxbrowser-data/*
 RemoteSystemsTempFiles/*
-.launches/*
+*/.launches/*
