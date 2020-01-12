@@ -1,6 +1,7 @@
 #include <msp.h>
 #include <driverlib.h>
 #include <stdio.h>
+#include "RGBLeds.h"
 
 /* Configuration for UART */
 static const eUSCI_UART_Config Uart115200Config =
@@ -67,6 +68,10 @@ void main(void)
 {
 	WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD; // stop watchdog timer
 
+	init_RGBLEDS();
+	LP3943_LedModeSet(RED, 0b1111001000001010);
+    for(;;);
+
 	uint8_t square[4][4] =
 	{
         { 1, 14,  4, 15},
@@ -78,15 +83,16 @@ void main(void)
 	int checksumc = fletcher16c(&square[0][0], 16);
 	int checksums = fletcher16s(&square[0][0], 16);
 
+	// serial port /dev/cu.usbmodemM43210051
     uartInit();
 
     char strc[255];
-    snprintf(strc, 255, "C implementation checksum is %d", checksumc);
-	uartTransmitString(strc);
+    snprintf(strc, 255, "C implementation checksum is %d\n", checksumc);
+    uartTransmitString(strc);
 
     char strs[255];
-    snprintf(strs, 255, "ASM implementation checksum is %d", checksums);
-	uartTransmitString(strs);
+    snprintf(strs, 255, "ASM implementation checksum is %d\n", checksums);
+    uartTransmitString(strs);
 
 	for(;;);
 }
