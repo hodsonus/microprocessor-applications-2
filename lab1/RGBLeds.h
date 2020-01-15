@@ -12,9 +12,9 @@
 
 typedef enum device
 {
-    RED = 0,
+    BLUE = 0,
     GREEN = 1,
-    BLUE = 2
+    RED = 2
 } unit_desig;
 
 /*

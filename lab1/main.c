@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include "RGBLeds.h"
 
+/* ---------------------------------------- LAB PART A ---------------------------------------- */
+
 /* Configuration for UART */
 static const eUSCI_UART_Config Uart115200Config =
 {
@@ -61,29 +63,20 @@ int Modulus255(int val)
     return val % 255;
 }
 
-/**
- * main.c
- */
-void main(void)
+void fletcherChecksumDemo()
 {
-	WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD; // stop watchdog timer
-
-	init_RGBLEDS();
-	LP3943_LedModeSet(RED, 0b1111001000001010);
-    for(;;);
-
-	uint8_t square[4][4] =
-	{
+    uint8_t square[4][4] =
+    {
         { 1, 14,  4, 15},
         { 8, 11,  5, 10},
         {13,  2, 16,  3},
         {12,  7,  9,  6}
-	};
+    };
 
-	int checksumc = fletcher16c(&square[0][0], 16);
-	int checksums = fletcher16s(&square[0][0], 16);
+    int checksumc = fletcher16c(&square[0][0], 16);
+    int checksums = fletcher16s(&square[0][0], 16);
 
-	// serial port /dev/cu.usbmodemM43210051
+    // serial port /dev/cu.usbmodemM43210051
     uartInit();
 
     char strc[255];
@@ -94,5 +87,107 @@ void main(void)
     snprintf(strs, 255, "ASM implementation checksum is %d\n", checksums);
     uartTransmitString(strs);
 
-	for(;;);
+    while(1);
+}
+
+/* ---------------------------------------- LAB PART B ---------------------------------------- */
+
+void Delay(int cycles)
+{
+    for (int i = 0; i < cycles; ++i);
+}
+
+void rgbDriverDemo()
+{
+    init_RGBLEDS();
+
+    int DELAY_TIME = CS_getMCLK() / 50;
+    uint32_t LED;
+
+    while (1)
+    {
+        LED = 0x0001;
+        for (int i = 0; i < 16; ++i)
+        {
+            LP3943_LedModeSet(RED, LED);
+            Delay(DELAY_TIME);
+            LED <<= 1;
+        }
+        LP3943_LedModeSet(RED, 0x0000);
+
+        LED = 0x0001;
+        for (int i = 0; i < 16; ++i)
+        {
+            LP3943_LedModeSet(BLUE, LED);
+            Delay(DELAY_TIME);
+            LED <<= 1;
+        }
+        LP3943_LedModeSet(BLUE, 0x0000);
+
+        LED = 0x0001;
+        for (int i = 0; i < 16; ++i)
+        {
+            LP3943_LedModeSet(GREEN, LED);
+            Delay(DELAY_TIME);
+            LED <<= 1;
+        }
+        LP3943_LedModeSet(GREEN, 0x0000);
+    }
+}
+
+/* ---------------------------------------- LAB PART C ---------------------------------------- */
+
+uint32_t redState;
+uint32_t blueState;
+uint32_t greenState;
+
+void SysTick_Handler() {
+    redState >>= 1;
+    greenState >>= 1;
+    blueState <<= 1;
+
+    LP3943_LedModeSet(RED, redState);
+    LP3943_LedModeSet(GREEN, greenState);
+    LP3943_LedModeSet(BLUE, blueState);
+}
+
+void PORT4_IRQHandler(void){
+    P4->IFG &= ~BIT4; // clear IFG flag
+
+    redState = 0xF000;
+    greenState = 0xF000;
+    blueState = 0x000F;
+}
+
+void isrLightshowDemo()
+{
+    redState = 0;
+    greenState = 0;
+    blueState = 0;
+    init_RGBLEDS();
+
+    SysTick_Config(CS_getMCLK() / 4); // configure to trigger every 250ms
+    SysTick_enableInterrupt();
+
+    P4->DIR &= ~BIT4; // configure P4.4 as input
+    P4->IFG &= ~BIT4; // P4.4 IFG cleared
+    P4->IE |= BIT4; // Enable interrupt on P4.4
+    P4->IES |= BIT4; // high-to-low transition
+    P4->REN |= BIT4; // Pull-up resister
+    P4->OUT |= BIT4; // Sets res to pull-up
+    NVIC_EnableIRQ(PORT4_IRQn);
+
+    PCM_gotoLPM0(); // enter LPM mode
+}
+
+/* ---------------------------------------- MAIN ---------------------------------------- */
+
+/**
+ * main.c
+ */
+void main(void)
+{
+    WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD; // stop watchdog timer
+
+    isrLightshowDemo();
 }

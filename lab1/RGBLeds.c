@@ -47,38 +47,38 @@ void LP3943_LedModeSet(uint32_t unit, uint16_t LED_DATA)
     // Calculate slave address from unit no.
     // First 7 bits -> slave address
     // 8th bit -> R/~W
-    const uint8_t BASE_ADDR = 0x60;
-    uint16_t slave_addr = BASE_ADDR + unit;
-
     // Set initial slave address since we are master
-    UCB2I2CSA = slave_addr;
+    const uint8_t BASE_ADDR = 0x60;
+    UCB2I2CSA = BASE_ADDR + unit;
 
     // Generate START condition, send chip address
     UCB2CTLW0 |= UCTXSTT;
 
+    // Wait for the start flag to go low
     // Wait for buffer availability
     // eUSCI_B transmit interrupt flag 0. UCTXIFG0 set when UCBxTXBUF empty
-    while(!(UCB2IFG & BIT1));
+    while(UCB2CTLW0 & UCTXSTT);
+    while(!(UCB2IFG & UCTXIFG0));
 
     // Fill TXBUF with register address and auto increment, wait for buffer
-    UCB2TXBUF = 0b00010110;
-    while(~(UCB2IFG & BIT1));
+    UCB2TXBUF = 0x16;
+    while(!(UCB2IFG & UCTXIFG0));
 
     // Fill TXBUF with LS0 data for the LP3943, wait for buffer
     UCB2TXBUF = LSO_data;
-    while(~(UCB2IFG & BIT1));
+    while(!(UCB2IFG & UCTXIFG0));
 
     // Fill TXBUF with LS1 data for the LP3943, wait for buffer
     UCB2TXBUF = LS1_data;
-    while(~(UCB2IFG & BIT1));
+    while(!(UCB2IFG & UCTXIFG0));
 
     // Fill TXBUF with LS2 data for the LP3943, wait for buffer
     UCB2TXBUF = LS2_data;
-    while(~(UCB2IFG & BIT1));
+    while(!(UCB2IFG & UCTXIFG0));
 
     // Fill TXBUF with LS3 data for the LP3943, wait for buffer
     UCB2TXBUF = LS3_data;
-    while(~(UCB2IFG & BIT1));
+    while(!(UCB2IFG & UCTXIFG0));
 
     // Generate STOP condition
     UCB2CTLW0 |= UCTXSTP;
@@ -91,7 +91,11 @@ void init_RGBLEDS()
 
     // Initialize I2C master
     // Sets as master, I2C mode, Clock sync, SMCLK source, Transmitter
-    UCB2CTLW0 |= UCMST | UCMODE_3 | UCSYNC | UCSSEL_2 | UCTR;
+    UCB2CTLW0 |= UCMST
+               | UCMODE_3
+               | UCSYNC
+               | UCSSEL_2
+               | UCTR;
 
     // Sets the FCLCK as 400khz
     // Presumes that the SMCLK is selected as source and FSMCLK is 12MHz
