@@ -21,9 +21,9 @@ void LP3943_LedModeSet(uint32_t unit, uint16_t LED_DATA)
      * mode. The operating modes are on, off, PWM1 and PWM2.
      *
      * The units that can be written to are:
-     *  UNIT    |   0   |   Red
+     *  UNIT    |   0   |   Blue
      *  UNIT    |   1   |   Green
-     *  UNIT    |   2   |   Blue
+     *  UNIT    |   2   |   Red
      *
      * The registers to be written to are:
      *  LSO | LED0-3 Selector

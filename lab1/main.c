@@ -101,7 +101,28 @@ void rgbDriverDemo()
 {
     init_RGBLEDS();
 
-    int DELAY_TIME = CS_getMCLK() / 50;
+    uint8_t square[4][4] =
+        {
+            { 1, 14,  4, 15},
+            { 8, 11,  5, 10},
+            {13,  2, 16,  3},
+            {12,  7,  9,  6}
+        };
+
+    uint16_t checksums = fletcher16s(&square[0][0], 16);
+
+    LP3943_LedModeSet(RED, checksums);
+    LP3943_LedModeSet(BLUE, checksums);
+    LP3943_LedModeSet(GREEN, checksums);
+
+    while(1);
+}
+
+void rgbLoop()
+{
+    init_RGBLEDS();
+
+    int DELAY_LOOPS = 150;
     uint32_t LED;
 
     while (1)
@@ -110,7 +131,7 @@ void rgbDriverDemo()
         for (int i = 0; i < 16; ++i)
         {
             LP3943_LedModeSet(RED, LED);
-            Delay(DELAY_TIME);
+            Delay(DELAY_LOOPS);
             LED <<= 1;
         }
         LP3943_LedModeSet(RED, 0x0000);
@@ -119,7 +140,7 @@ void rgbDriverDemo()
         for (int i = 0; i < 16; ++i)
         {
             LP3943_LedModeSet(BLUE, LED);
-            Delay(DELAY_TIME);
+            Delay(DELAY_LOOPS);
             LED <<= 1;
         }
         LP3943_LedModeSet(BLUE, 0x0000);
@@ -128,7 +149,7 @@ void rgbDriverDemo()
         for (int i = 0; i < 16; ++i)
         {
             LP3943_LedModeSet(GREEN, LED);
-            Delay(DELAY_TIME);
+            Delay(DELAY_LOOPS);
             LED <<= 1;
         }
         LP3943_LedModeSet(GREEN, 0x0000);
@@ -140,23 +161,58 @@ void rgbDriverDemo()
 uint32_t redState;
 uint32_t blueState;
 uint32_t greenState;
+bool isPattern1, changeState;
 
 void SysTick_Handler() {
-    redState >>= 1;
-    greenState >>= 1;
-    blueState <<= 1;
+
+    if (changeState)
+    {
+        isPattern1 = !isPattern1;
+    }
+
+    if (isPattern1)
+    {
+        if (redState == 0x0000 || changeState)
+        {
+            redState = 0xF000;
+//            greenState = 0xF000;
+            blueState = 0x000F;
+        }
+        else
+        {
+            redState >>= 1;
+//            greenState >>= 1;
+            blueState <<= 1;
+        }
+    }
+    else
+    {
+        if (changeState)
+        {
+            redState = 0xAAAA;
+//            greenState = 0xAAAA;
+            blueState = 0x5555;
+        }
+        else
+        {
+            redState = ~redState;
+//            greenState = ~greenState;
+            blueState = ~blueState;
+        }
+    }
+
+    changeState = false;
 
     LP3943_LedModeSet(RED, redState);
     LP3943_LedModeSet(GREEN, greenState);
     LP3943_LedModeSet(BLUE, blueState);
 }
 
-void PORT4_IRQHandler(void){
+void PORT4_IRQHandler(void)
+{
     P4->IFG &= ~BIT4; // clear IFG flag
 
-    redState = 0xF000;
-    greenState = 0xF000;
-    blueState = 0x000F;
+    changeState = true;
 }
 
 void isrLightshowDemo()
@@ -164,10 +220,12 @@ void isrLightshowDemo()
     redState = 0;
     greenState = 0;
     blueState = 0;
+    isPattern1 = true;
+    changeState = false;
+
     init_RGBLEDS();
 
     SysTick_Config(CS_getMCLK() / 4); // configure to trigger every 250ms
-    SysTick_enableInterrupt();
 
     P4->DIR &= ~BIT4; // configure P4.4 as input
     P4->IFG &= ~BIT4; // P4.4 IFG cleared
@@ -175,7 +233,9 @@ void isrLightshowDemo()
     P4->IES |= BIT4; // high-to-low transition
     P4->REN |= BIT4; // Pull-up resister
     P4->OUT |= BIT4; // Sets res to pull-up
+
     NVIC_EnableIRQ(PORT4_IRQn);
+    SysTick_enableInterrupt();
 
     PCM_gotoLPM0(); // enter LPM mode
 }
