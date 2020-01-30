@@ -9,7 +9,6 @@
 #define BSP_H_
 
 /* Includes */
-
 #include <stdint.h>
 #include "bme280_support.h"
 #include "bmi160_support.h"
@@ -18,9 +17,7 @@
 #include "BackChannelUart.h"
 #include "ClockSys.h"
 #include "Joystick.h"
-// Insert include for LEDs here 
-
-
+#include "RGBLeds.h"
 
 /********************************** Public Functions **************************************/
 
