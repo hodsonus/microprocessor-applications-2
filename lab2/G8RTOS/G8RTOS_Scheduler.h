@@ -5,13 +5,24 @@
 #ifndef G8RTOS_SCHEDULER_H_
 #define G8RTOS_SCHEDULER_H_
 
-#include "G8RTOS_Structures.h"
+#include <G8RTOS/G8RTOS_Structures.h>
 
 /*********************************************** Sizes and Limits *********************************************************************/
 #define MAX_THREADS 6
 #define STACKSIZE 1024
 #define OSINT_PRIORITY 7
 /*********************************************** Sizes and Limits *********************************************************************/
+
+
+/*********************************************** Enums ********************************************************************************/
+typedef enum SchedulerRequestCode
+{
+    NO_ERR = 0,
+    ERR_MAX_THREADS_SCHEDULED = -1,
+    ERR_LAUNCHED_NO_THREADS = -2,
+} SchedulerRequestCode;
+/*********************************************** Enums ********************************************************************************/
+
 
 /*********************************************** Public Variables *********************************************************************/
 
@@ -34,18 +45,18 @@ void G8RTOS_Init();
  * 	- Sets Context to first thread
  * Returns: Error Code for starting scheduler. This will only return if the scheduler fails
  */
-int32_t G8RTOS_Launch();
+SchedulerRequestCode G8RTOS_Launch();
 
 /*
  * Adds threads to G8RTOS Scheduler
- * 	- Checks if there are stil available threads to insert to scheduler
+ * 	- Checks if there are still available threads to insert to scheduler
  * 	- Initializes the thread control block for the provided thread
  * 	- Initializes the stack for the provided thread
  * 	- Sets up the next and previous tcb pointers in a round robin fashion
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
  * Returns: Error code for adding threads
  */
-int32_t G8RTOS_AddThread(void (*threadToAdd)(void));
+SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void));
 
 /*********************************************** Public Functions *********************************************************************/
 

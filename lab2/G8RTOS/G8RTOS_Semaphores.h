@@ -5,6 +5,8 @@
 #ifndef G8RTOS_SEMAPHORES_H_
 #define G8RTOS_SEMAPHORES_H_
 
+#include <stdint.h>
+
 /*********************************************** Datatype Definitions *****************************************************************/
 
 /*

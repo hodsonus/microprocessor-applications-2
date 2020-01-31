@@ -1,5 +1,7 @@
 #include <msp.h>
 #include <driverlib.h>
+#include <BSP.h>
+#include <G8RTOS/G8RTOS.h>
 #include <stdio.h>
 
 /* ---------------------------------------- MAIN ---------------------------------------- */
@@ -9,7 +11,8 @@
  */
 void main(void)
 {
-    WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD; // stop watchdog timer
-
-    PCM_gotoLPM0(); // enter LPM mode
+    G8RTOS_Init();
+    LP3943_LedModeSet(RED, 0xFFFF);
+//    G8RTOS_AddThread(WaitInit,1,NULL);
+    G8RTOS_Launch();
 }

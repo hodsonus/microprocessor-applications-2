@@ -4,10 +4,10 @@
 
 /*********************************************** Dependencies and Externs *************************************************************/
 
+#include <G8RTOS/G8RTOS_CriticalSection.h>
+#include <G8RTOS/G8RTOS_Semaphores.h>
 #include <stdint.h>
 #include "msp.h"
-#include "G8RTOS_Semaphores.h"
-#include "G8RTOS_CriticalSection.h"
 
 /*********************************************** Dependencies and Externs *************************************************************/
 

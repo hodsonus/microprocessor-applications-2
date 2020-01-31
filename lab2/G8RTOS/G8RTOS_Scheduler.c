@@ -4,9 +4,9 @@
 
 /*********************************************** Dependencies and Externs *************************************************************/
 
+#include <G8RTOS/G8RTOS_Scheduler.h>
 #include <stdint.h>
 #include "msp.h"
-#include "G8RTOS_Scheduler.h"
 #include "BSP.h"
 
 /*
@@ -29,6 +29,8 @@ extern tcb_t * CurrentlyRunningThread;
 
 /* Status Register with the Thumb-bit Set */
 #define THUMBBIT 0x01000000
+/* Default Register Values */
+#define ZERO 0x0000
 
 /*********************************************** Defines ******************************************************************************/
 
@@ -41,7 +43,7 @@ extern tcb_t * CurrentlyRunningThread;
 static tcb_t threadControlBlocks[MAX_THREADS];
 
 /* Thread Stacks
- *	- An array of arrays that will act as invdividual stacks for each thread
+ *	- An array of arrays that will act as individual stacks for each thread
  */
 static int32_t threadStacks[MAX_THREADS][STACKSIZE];
 
@@ -78,7 +80,7 @@ static void InitSysTick(uint32_t numCycles)
  */
 void G8RTOS_Scheduler()
 {
-	/* Implement This */
+	/* TODO - Implement This */
 }
 
 /*
@@ -90,7 +92,11 @@ void G8RTOS_Scheduler()
  */
 void SysTick_Handler()
 {
-	/* Implement this */
+    // increment the system time
+    SystemTime++;
+
+    //set the PendSV flag to start the scheduler
+    // TODO
 }
 
 /*********************************************** Private Functions ********************************************************************/
@@ -112,9 +118,6 @@ uint32_t SystemTime;
  */
 void G8RTOS_Init()
 {
-    // Stop watchdog timer
-    WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;
-
     // Initialize system time to zero
     SystemTime = 0;
 
@@ -131,15 +134,17 @@ void G8RTOS_Init()
  * 	- Sets Context to first thread
  * Returns: Error Code for starting scheduler. This will only return if the scheduler fails
  */
-int G8RTOS_Launch()
+SchedulerRequestCode G8RTOS_Launch()
 {
-	/* Implement this */
+    /* TODO - Implement this */
+    if (NumberOfThreads == 0) return ERR_LAUNCHED_NO_THREADS;
+    CurrentlyRunningThread = &threadControlBlocks[0];
 }
 
 
 /*
  * Adds threads to G8RTOS Scheduler
- * 	- Checks if there are stil available threads to insert to scheduler
+ * 	- Checks if there are still available threads to insert to scheduler
  * 	- Initializes the thread control block for the provided thread
  * 	- Initializes the stack for the provided thread to hold a "fake context"
  * 	- Sets stack tcb stack pointer to top of thread stack
@@ -147,9 +152,56 @@ int G8RTOS_Launch()
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
  * Returns: Error code for adding threads
  */
-int G8RTOS_AddThread(void (*threadToAdd)(void))
+SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void))
 {
-	/* Implement this */
+    // Checks if there are still available threads to insert to scheduler
+    if (NumberOfThreads >= MAX_THREADS) return ERR_MAX_THREADS_SCHEDULED;
+
+    // Initializes the thread control block for the provided thread
+    // Sets up the next and previous tcb pointers in a round robin fashion
+    // The pointers below are arranged the same as threadControlBlocks array
+    // NumberOfThreads points to the new thread location
+    if (NumberOfThreads == 0)
+    {
+        // If this is the first thread, point it to itself
+        threadControlBlocks[NumberOfThreads].prev = &threadControlBlocks[NumberOfThreads];
+        threadControlBlocks[NumberOfThreads].next = &threadControlBlocks[NumberOfThreads];
+    }
+    else
+    {
+        // Insert the new thread immediately after the most recently inserted thread
+        threadControlBlocks[NumberOfThreads].prev = &threadControlBlocks[NumberOfThreads-1];
+        threadControlBlocks[NumberOfThreads-1].next = &threadControlBlocks[NumberOfThreads];
+
+        // Point the ends towards each other
+        threadControlBlocks[NumberOfThreads].next = &threadControlBlocks[0];
+        threadControlBlocks[0].prev = &threadControlBlocks[NumberOfThreads];
+    }
+
+    // Initializes the stack for the provided thread to hold a "fake context"
+    threadStacks[NumberOfThreads][STACKSIZE-1]  = THUMBBIT; // PSR
+    threadStacks[NumberOfThreads][STACKSIZE-2]  = (int32_t)threadToAdd; // R15 (PC)
+    threadStacks[NumberOfThreads][STACKSIZE-3]  = ZERO; // R14 (LR)
+    threadStacks[NumberOfThreads][STACKSIZE-4]  = ZERO; // R12
+    threadStacks[NumberOfThreads][STACKSIZE-5]  = ZERO; // R3
+    threadStacks[NumberOfThreads][STACKSIZE-6]  = ZERO; // R2
+    threadStacks[NumberOfThreads][STACKSIZE-7]  = ZERO; // R1
+    threadStacks[NumberOfThreads][STACKSIZE-8]  = ZERO; // R0
+    threadStacks[NumberOfThreads][STACKSIZE-9]  = ZERO; // R11
+    threadStacks[NumberOfThreads][STACKSIZE-10] = ZERO; // R10
+    threadStacks[NumberOfThreads][STACKSIZE-11] = ZERO; // R9
+    threadStacks[NumberOfThreads][STACKSIZE-12] = ZERO; // R8
+    threadStacks[NumberOfThreads][STACKSIZE-13] = ZERO; // R7
+    threadStacks[NumberOfThreads][STACKSIZE-14] = ZERO; // R6
+    threadStacks[NumberOfThreads][STACKSIZE-15] = ZERO; // R5
+    threadStacks[NumberOfThreads][STACKSIZE-16] = ZERO; // R4
+
+    // Sets stack tcb stack pointer to top of thread stack
+    threadControlBlocks[NumberOfThreads].sp = &threadStacks[NumberOfThreads][STACKSIZE-16];
+
+    NumberOfThreads++;
+
+    return NO_ERROR;
 }
 
 /*********************************************** Public Functions *********************************************************************/

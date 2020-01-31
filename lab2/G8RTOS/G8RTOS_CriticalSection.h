@@ -8,6 +8,8 @@
 #ifndef G8RTOS_CRITICALSECTION_H_
 #define G8RTOS_CRITICALSECTION_H_
 
+#include <stdint.h>
+
 /*
  * Starts a critical section
  * 	- Saves the state of the current PRIMASK (I-bit)
