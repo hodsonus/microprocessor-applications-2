@@ -80,7 +80,7 @@ static void InitSysTick(uint32_t numCycles)
  */
 void G8RTOS_Scheduler()
 {
-	/* TODO - Implement This */
+    CurrentlyRunningThread = CurrentlyRunningThread->next;
 }
 
 /*
@@ -96,7 +96,7 @@ void SysTick_Handler()
     SystemTime++;
 
     //set the PendSV flag to start the scheduler
-    // TODO
+    SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 }
 
 /*********************************************** Private Functions ********************************************************************/
@@ -125,7 +125,7 @@ void G8RTOS_Init()
     NumberOfThreads = 0;
 
     // Initialize all hardware on the board
-    BSP_InitBoard();
+//    BSP_InitBoard(); // TODO, why is this broken?!
 }
 
 /*
@@ -136,9 +136,22 @@ void G8RTOS_Init()
  */
 SchedulerRequestCode G8RTOS_Launch()
 {
-    /* TODO - Implement this */
     if (NumberOfThreads == 0) return ERR_LAUNCHED_NO_THREADS;
+
+    // Set CurrentlyRunningThread
     CurrentlyRunningThread = &threadControlBlocks[0];
+
+    // Initialize SysTick
+    InitSysTick(ClockSys_GetSysFreq() / 10^3);
+
+    // Set the priorities of PendSV and SysTick to the lowest priority
+    __NVIC_SetPriority(PendSV_IRQn, OSINT_PRIORITY);
+    __NVIC_SetPriority(SysTick_IRQn, OSINT_PRIORITY);
+
+    // Call G8RTOS_Start
+    G8RTOS_Start();
+
+    return NO_ERR; // will never be reached
 }
 
 
@@ -178,6 +191,9 @@ SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void))
         threadControlBlocks[0].prev = &threadControlBlocks[NumberOfThreads];
     }
 
+    // Sets stack tcb stack pointer to top of thread stack
+    threadControlBlocks[NumberOfThreads].sp = &threadStacks[NumberOfThreads][STACKSIZE-16];
+
     // Initializes the stack for the provided thread to hold a "fake context"
     threadStacks[NumberOfThreads][STACKSIZE-1]  = THUMBBIT; // PSR
     threadStacks[NumberOfThreads][STACKSIZE-2]  = (int32_t)threadToAdd; // R15 (PC)
@@ -196,12 +212,17 @@ SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void))
     threadStacks[NumberOfThreads][STACKSIZE-15] = ZERO; // R5
     threadStacks[NumberOfThreads][STACKSIZE-16] = ZERO; // R4
 
-    // Sets stack tcb stack pointer to top of thread stack
-    threadControlBlocks[NumberOfThreads].sp = &threadStacks[NumberOfThreads][STACKSIZE-16];
-
     NumberOfThreads++;
 
-    return NO_ERROR;
+    return NO_ERR;
+}
+
+/*
+ * Cooperatively yields CPU
+ */
+void G8RTOS_Yield()
+{
+    SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 }
 
 /*********************************************** Public Functions *********************************************************************/

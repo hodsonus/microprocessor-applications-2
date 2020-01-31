@@ -20,18 +20,16 @@
  *      - For Lab 2 the TCB will only hold the Stack Pointer, next TCB and the previous TCB (for Round Robin Scheduling)
  */
 
-/* Create tcb struct here */
-
 typedef struct tcb_t
 {
-    bool alive;
-    uint8_t priority;
-    bool asleep;
-    uint32_t sleep_cnt;
-//    semaphore* blocked; // TODO - make semaphore operations
+    int32_t* sp;
     struct tcb_t* prev;
     struct tcb_t* next;
-    int32_t* sp;
+//    bool alive;
+//    uint8_t priority;
+//    bool asleep;
+//    uint32_t sleep_cnt;
+//    semaphore* blocked;
 } tcb_t;
 
 /*********************************************** Data Structure Definitions ***********************************************************/
@@ -42,8 +40,5 @@ typedef struct tcb_t
 tcb_t * CurrentlyRunningThread;
 
 /*********************************************** Public Variables *********************************************************************/
-
-
-
 
 #endif /* G8RTOS_STRUCTURES_H_ */

@@ -6,7 +6,7 @@
 	.def G8RTOS_Start, PendSV_Handler
 
 	; Dependencies
-	.ref CurrentlyRunningThread, G8RTOS_Scheduler
+	.ref CurrentlyRunningThread, G8RTOS_Scheduler, StartCriticalSection, EndCriticalSection
 
 	.thumb		; Set to thumb mode
 	.align 2	; Align by 2 bytes (thumb mode uses allignment by 2 or 4)
@@ -22,7 +22,33 @@ RunningPtr: .field CurrentlyRunningThread, 32
 G8RTOS_Start:
 
 	.asmfunc
-	; Implement this
+
+	push {r0-r3, r12, lr}
+	bl StartCriticalSection
+	pop {r0-r3, r12, lr}
+
+	; Loads the currently running thread’s context into the CPU
+	ldr r0, RunningPtr ; point to the beginning of the running thread's struct
+	ldr r1, [r0] ; follow the pointer to the object and load it
+	ldr sp, [r1] ; restore the sp with the value that was stored in the tcb
+
+	; Pops registers from thread stack
+	pop {r4-r11, r0-r3, r12}
+
+	; Skip loading LR (R14) and pop PC (R15) into LR
+	add sp, sp, #4
+	pop {lr}
+
+	push {r0-r3, r12, lr}
+	bl EndCriticalSection
+	pop {r0-r3, r12, lr}
+
+	; Enable interrupts
+	cpsie i
+
+	; Branch to the new function
+	bx lr
+
 	.endasmfunc
 
 ; PendSV_Handler
@@ -33,9 +59,44 @@ G8RTOS_Start:
 ;	- Set stack pointer to new stack pointer from new tcb
 ;	- Pops registers from thread stack
 PendSV_Handler:
-	
+
 	.asmfunc
-	;Implement this
+
+	push {r0-r3, r12, lr}
+	bl StartCriticalSection
+	pop {r0-r3, r12, lr}
+
+	; Saves remaining registers into thread stack
+	push {r4-r11}
+
+	; Saves current stack pointer to tcb
+	ldr r0, RunningPtr ; point to the beginning of the running thread's struct
+	ldr r1, [r0] ; follow the pointer to the object and load it
+	str sp, [r1] ; update the value of the memory that sp is pointing to as the current sp
+
+	; Calls G8RTOS_Scheduler to get new tcb
+	push {r0-r3, r12, lr}
+	bl G8RTOS_Scheduler
+	pop {r0-r3, r12, lr}
+
+	; Set stack pointer to new stack pointer from new tcb
+	ldr r0, RunningPtr ; point to the beginning of the **new** running thread's struct
+	ldr r1, [r0] ; follow the pointer to the object and load it
+	ldr sp, [r1] ; restore the sp with the value that was stored in the tcb
+
+	; Pops registers from thread stack
+	pop {r4-r11}
+	; Popping r0-r3, r12-r15, psr is automatic when returning from this handler
+
+	push {r0-r3, r12, lr}
+	bl EndCriticalSection
+	pop {r0-r3, r12, lr}
+
+	; Enable interrupts
+	cpsie i
+
+	bx lr
+
 	.endasmfunc
 	
 	; end of the asm file

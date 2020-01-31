@@ -58,7 +58,6 @@ void LP3943_LedModeSet(uint32_t unit, uint16_t LED_DATA)
     // Wait for buffer availability
     // eUSCI_B transmit interrupt flag 0. UCTXIFG0 set when UCBxTXBUF empty
     while(UCB2CTLW0 & UCTXSTT);
-    while(!(UCB2IFG & UCTXIFG0));
 
     // Fill TXBUF with register address and auto increment, wait for buffer
     UCB2TXBUF = 0x16;
@@ -82,6 +81,7 @@ void LP3943_LedModeSet(uint32_t unit, uint16_t LED_DATA)
 
     // Generate STOP condition
     UCB2CTLW0 |= UCTXSTP;
+    // TODO - wait for stop bit
 }
 
 void init_RGBLEDS()

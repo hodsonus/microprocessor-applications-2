@@ -2,6 +2,7 @@
 #include <driverlib.h>
 #include <stdio.h>
 #include "RGBLeds.h"
+#include "BSP.h"
 
 /* ---------------------------------------- LAB PART A ---------------------------------------- */
 
@@ -67,7 +68,7 @@ void fletcherChecksumDemo()
 {
     uint8_t square[4][4] =
     {
-        { 1, 14,  4, 15},
+        { 18, 14,  4, 15},
         { 8, 11,  5, 10},
         {13,  2, 16,  3},
         {12,  7,  9,  6}
@@ -122,7 +123,7 @@ void rgbLoop()
 {
     init_RGBLEDS();
 
-    int DELAY_LOOPS = 150;
+    int DELAY_LOOPS = ClockSys_GetSysFreq()/50;
     uint32_t LED;
 
     while (1)
@@ -225,7 +226,7 @@ void isrLightshowDemo()
 
     init_RGBLEDS();
 
-    SysTick_Config(CS_getMCLK() / 4); // configure to trigger every 250ms
+    SysTick_Config(ClockSys_GetSysFreq() / 4); // configure to trigger every 250ms
 
     P4->DIR &= ~BIT4; // configure P4.4 as input
     P4->IFG &= ~BIT4; // P4.4 IFG cleared
@@ -240,6 +241,39 @@ void isrLightshowDemo()
     PCM_gotoLPM0(); // enter LPM mode
 }
 
+
+/* ---------------------------------------- QUIZ ---------------------------------------- */
+
+typedef struct timedate_t
+{
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+} timedate_t;
+
+extern timedate_t timeUntilNewYears(timedate_t* timedate);
+
+void quiz(void)
+{
+    timedate_t today = {.month = 2,
+                        .day = 30,
+                        .hour = 10,
+                        .minute = 4};
+
+    timedate_t result = timeUntilNewYears(&today);
+
+    while(1);
+}
+
+int Modulus(int val, int div)
+{
+    return val % div;
+}
+
+/* ---------------------------------------- QUIZ ---------------------------------------- */
+
+
 /* ---------------------------------------- MAIN ---------------------------------------- */
 
 /**
@@ -249,5 +283,5 @@ void main(void)
 {
     WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD; // stop watchdog timer
 
-    isrLightshowDemo();
+    quiz();
 }
