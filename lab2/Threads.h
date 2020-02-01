@@ -8,7 +8,8 @@
 #ifndef THREADS_H_
 #define THREADS_H_
 
-semaphore_t i2c;
+semaphore_t sensor;
+semaphore_t led;
 
 void task0(void);
 void task1(void);
