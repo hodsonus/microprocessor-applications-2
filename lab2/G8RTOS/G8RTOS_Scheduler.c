@@ -151,7 +151,7 @@ SchedulerRequestCode G8RTOS_Launch()
     // Call G8RTOS_Start
     G8RTOS_Start();
 
-    return NO_ERR; // will never be reached
+    return ERR_UNKN_FAILURE;
 }
 
 

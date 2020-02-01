@@ -79,9 +79,9 @@ void LP3943_LedModeSet(uint32_t unit, uint16_t LED_DATA)
     UCB2TXBUF = LS3_data;
     while(!(UCB2IFG & UCTXIFG0));
 
-    // Generate STOP condition
+    // Generate STOP condition and wait for the STOP bit to go low
     UCB2CTLW0 |= UCTXSTP;
-    // TODO - wait for stop bit
+    while(UCB2CTLW0 & UCTXSTP);
 }
 
 void init_RGBLEDS()

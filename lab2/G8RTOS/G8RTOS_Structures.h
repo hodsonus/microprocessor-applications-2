@@ -8,7 +8,7 @@
 #ifndef G8RTOS_STRUCTURES_H_
 #define G8RTOS_STRUCTURES_H_
 
-#include <G8RTOS/G8RTOS.h>
+#include <G8RTOS/G8RTOS_Semaphores.h>
 #include <stdbool.h>
 
 /*********************************************** Data Structure Definitions ***********************************************************/
@@ -25,11 +25,11 @@ typedef struct tcb_t
     int32_t* sp;
     struct tcb_t* prev;
     struct tcb_t* next;
-//    bool alive;
-//    uint8_t priority;
-//    bool asleep;
-//    uint32_t sleep_cnt;
-//    semaphore* blocked;
+    bool alive;
+    uint8_t priority;
+    bool asleep;
+    uint32_t sleep_cnt;
+    semaphore_t* blocked;
 } tcb_t;
 
 /*********************************************** Data Structure Definitions ***********************************************************/

@@ -23,10 +23,6 @@ G8RTOS_Start:
 
 	.asmfunc
 
-	push {r0-r3, r12, lr}
-	bl StartCriticalSection
-	pop {r0-r3, r12, lr}
-
 	; Loads the currently running thread’s context into the CPU
 	ldr r0, RunningPtr ; point to the beginning of the running thread's struct
 	ldr r1, [r0] ; follow the pointer to the object and load it
@@ -38,10 +34,6 @@ G8RTOS_Start:
 	; Skip loading LR (R14) and pop PC (R15) into LR
 	add sp, sp, #4
 	pop {lr}
-
-	push {r0-r3, r12, lr}
-	bl EndCriticalSection
-	pop {r0-r3, r12, lr}
 
 	; Enable interrupts
 	cpsie i
@@ -62,16 +54,16 @@ PendSV_Handler:
 
 	.asmfunc
 
-	push {r0-r3, r12, lr}
-	bl StartCriticalSection
-	pop {r0-r3, r12, lr}
+	push {r1-r3, r12, lr}
+	bl StartCriticalSection ; r0 contains IBit_State
+	pop {r1-r3, r12, lr}
 
 	; Saves remaining registers into thread stack
 	push {r4-r11}
 
 	; Saves current stack pointer to tcb
-	ldr r0, RunningPtr ; point to the beginning of the running thread's struct
-	ldr r1, [r0] ; follow the pointer to the object and load it
+	ldr r1, RunningPtr ; point to the beginning of the running thread's struct
+	ldr r1, [r1] ; follow the pointer to the object and load it
 	str sp, [r1] ; update the value of the memory that sp is pointing to as the current sp
 
 	; Calls G8RTOS_Scheduler to get new tcb
@@ -80,20 +72,17 @@ PendSV_Handler:
 	pop {r0-r3, r12, lr}
 
 	; Set stack pointer to new stack pointer from new tcb
-	ldr r0, RunningPtr ; point to the beginning of the **new** running thread's struct
-	ldr r1, [r0] ; follow the pointer to the object and load it
+	ldr r1, RunningPtr ; point to the beginning of the **new** running thread's struct
+	ldr r1, [r1] ; follow the pointer to the object and load it
 	ldr sp, [r1] ; restore the sp with the value that was stored in the tcb
 
 	; Pops registers from thread stack
 	pop {r4-r11}
 	; Popping r0-r3, r12-r15, psr is automatic when returning from this handler
 
-	push {r0-r3, r12, lr}
-	bl EndCriticalSection
-	pop {r0-r3, r12, lr}
-
-	; Enable interrupts
-	cpsie i
+	push {r1-r3, r12, lr}
+	bl EndCriticalSection ; r0 contains IBit_State
+	pop {r1-r3, r12, lr}
 
 	bx lr
 

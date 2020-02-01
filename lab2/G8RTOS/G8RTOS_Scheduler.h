@@ -20,6 +20,7 @@ typedef enum SchedulerRequestCode
     NO_ERR = 0,
     ERR_MAX_THREADS_SCHEDULED = -1,
     ERR_LAUNCHED_NO_THREADS = -2,
+    ERR_UNKN_FAILURE = -3,
 } SchedulerRequestCode;
 /*********************************************** Enums ********************************************************************************/
 
