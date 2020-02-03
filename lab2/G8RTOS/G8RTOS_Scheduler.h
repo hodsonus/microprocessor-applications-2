@@ -59,6 +59,11 @@ SchedulerRequestCode G8RTOS_Launch();
  */
 SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void));
 
+/*
+ * Cooperatively yields CPU
+ */
+void G8RTOS_Yield();
+
 /*********************************************** Public Functions *********************************************************************/
 
 #endif /* G8RTOS_SCHEDULER_H_ */

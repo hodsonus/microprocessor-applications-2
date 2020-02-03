@@ -36,13 +36,13 @@ void task0(void)
         else if (accelerometerX >   4000) ledData = 0x0700;
         else if (accelerometerX >   2000) ledData = 0x0300;
         else if (accelerometerX >      0) ledData = 0x0100;
-        else if (accelerometerX >  -2000) ledData = 0x0010;
-        else if (accelerometerX >  -4000) ledData = 0x0030;
-        else if (accelerometerX >  -6000) ledData = 0x0070;
+        else if (accelerometerX >  -2000) ledData = 0x0080;
+        else if (accelerometerX >  -4000) ledData = 0x00C0;
+        else if (accelerometerX >  -6000) ledData = 0x00E0;
         else if (accelerometerX >  -8000) ledData = 0x00F0;
-        else if (accelerometerX > -10000) ledData = 0x00F1;
-        else if (accelerometerX > -12000) ledData = 0x00F3;
-        else if (accelerometerX > -14000) ledData = 0x00F7;
+        else if (accelerometerX > -10000) ledData = 0x00F8;
+        else if (accelerometerX > -12000) ledData = 0x00FC;
+        else if (accelerometerX > -14000) ledData = 0x00FE;
         else                              ledData = 0x00FF;
 
         // Waits for the LED I2C semaphore.
@@ -53,6 +53,8 @@ void task0(void)
 
         // Releases the LED I2C semaphore.
         G8RTOS_SignalSemaphore(&led);
+
+        G8RTOS_Yield();
     }
 }
 
@@ -99,6 +101,8 @@ void task1(void)
 
         // Releases the LED I2C semaphore.
         G8RTOS_SignalSemaphore(&led);
+
+        G8RTOS_Yield();
     }
 }
 
@@ -128,13 +132,13 @@ void task2(void)
         else if (gyroZ >  2000) ledData = 0x0700;
         else if (gyroZ >  1000) ledData = 0x0300;
         else if (gyroZ >     0) ledData = 0x0100;
-        else if (gyroZ > -1000) ledData = 0x0010;
-        else if (gyroZ > -2000) ledData = 0x0030;
-        else if (gyroZ > -3000) ledData = 0x0070;
+        else if (gyroZ > -1000) ledData = 0x0080;
+        else if (gyroZ > -2000) ledData = 0x00C0;
+        else if (gyroZ > -3000) ledData = 0x00E0;
         else if (gyroZ > -4000) ledData = 0x00F0;
-        else if (gyroZ > -5000) ledData = 0x00F1;
-        else if (gyroZ > -6000) ledData = 0x00F3;
-        else if (gyroZ > -7000) ledData = 0x00F7;
+        else if (gyroZ > -5000) ledData = 0x00F8;
+        else if (gyroZ > -6000) ledData = 0x00FC;
+        else if (gyroZ > -7000) ledData = 0x00FE;
         else                    ledData = 0x00FF;
 
         // Waits for the LED I2C semaphore.
@@ -145,5 +149,7 @@ void task2(void)
 
         // Releases the LED I2C semaphore.
         G8RTOS_SignalSemaphore(&led);
+
+        G8RTOS_Yield();
     }
 }
