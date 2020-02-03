@@ -22,7 +22,7 @@ void task0(void)
         G8RTOS_WaitSemaphore(&sensor);
 
         // Reads accelerometer’s x-axis and saves it.
-        while(bmi160_read_accel_x(&accelerometerX));
+        bmi160_read_accel_x(&accelerometerX);
 
         // Releases the sensor I2C semaphore.
         G8RTOS_SignalSemaphore(&sensor);
@@ -68,7 +68,7 @@ void task1(void)
         G8RTOS_WaitSemaphore(&sensor);
 
         // Reads light sensor and saves it.
-        while(!sensorOpt3001Read(&lightData));
+        sensorOpt3001Read(&lightData);
 
         // Releases the sensor I2C semaphore.
         G8RTOS_SignalSemaphore(&sensor);
@@ -114,7 +114,7 @@ void task2(void)
         G8RTOS_WaitSemaphore(&sensor);
 
         // Reads z-axis of the gyro and saves it.
-        while(bmi160_read_gyro_z(&gyroZ));
+        bmi160_read_gyro_z(&gyroZ);
 
         // Releases the sensor I2C semaphore.
         G8RTOS_SignalSemaphore(&sensor);

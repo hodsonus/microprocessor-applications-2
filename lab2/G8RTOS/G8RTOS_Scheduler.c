@@ -125,7 +125,7 @@ void G8RTOS_Init()
     NumberOfThreads = 0;
 
     // Initialize all hardware on the board
-//    BSP_InitBoard(); // TODO, why is this broken?!
+    BSP_InitBoard();
 }
 
 /*
