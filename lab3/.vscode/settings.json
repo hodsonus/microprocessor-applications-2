@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "driverlib.h": "c",
+        "adc14.h": "c",
+        "stdbool.h": "c",
+        "msp.h": "c",
+        "msp432p401r.h": "c",
+        "msp432p4011.h": "c"
+    }
+}
