@@ -32,12 +32,22 @@ typedef struct tcb_t
     semaphore_t* blocked;
 } tcb_t;
 
+/*
+ *  Periodic Thread Control Block:
+ *      - Holds a function pointer that points to the periodic thread to be executed
+ *      - Has a period in us
+ *      - Holds Current time
+ *      - Contains pointer to the next periodic event - linked list
+ */
+
+/* TODO - Create periodic thread struct here */
+
 /*********************************************** Data Structure Definitions ***********************************************************/
 
 
 /*********************************************** Public Variables *********************************************************************/
 
-tcb_t * CurrentlyRunningThread;
+tcb_t* CurrentlyRunningThread;
 
 /*********************************************** Public Variables *********************************************************************/
 

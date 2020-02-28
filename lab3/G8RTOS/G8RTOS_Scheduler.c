@@ -47,6 +47,10 @@ static tcb_t threadControlBlocks[MAX_THREADS];
  */
 static int32_t threadStacks[MAX_THREADS][STACKSIZE];
 
+/* Periodic Event Threads
+ * - An array of periodic events to hold pertinent information for each thread
+ */
+static ptcb_t Pthread[MAXPTHREADS];
 
 /*********************************************** Data Structures Used *****************************************************************/
 
@@ -57,6 +61,11 @@ static int32_t threadStacks[MAX_THREADS][STACKSIZE];
  * Current Number of Threads currently in the scheduler
  */
 static uint32_t NumberOfThreads;
+
+/*
+ * Current Number of Periodic Threads currently in the scheduler
+ */
+static uint32_t NumberOfPthreads;
 
 /*********************************************** Private Variables ********************************************************************/
 
@@ -77,25 +86,29 @@ static void InitSysTick(uint32_t numCycles)
  * Chooses the next thread to run.
  * Lab 2 Scheduling Algorithm:
  * 	- Simple Round Robin: Choose the next running thread by selecting the currently running thread's next pointer
+ * 	- Check for sleeping and blocked threads
  */
 void G8RTOS_Scheduler()
 {
+    // TODO - Check for sleeping and blocked threads
+
     CurrentlyRunningThread = CurrentlyRunningThread->next;
 }
 
 /*
  * SysTick Handler
- * Currently the Systick Handler will only increment the system time
- * and set the PendSV flag to start the scheduler
- *
- * In the future, this function will also be responsible for sleeping threads and periodic threads
+ * The Systick Handler now will increment the system time,
+ * set the PendSV flag to start the scheduler,
+ * and be responsible for handling sleeping and periodic threads
  */
 void SysTick_Handler()
 {
+    // TODO - handle sleeping and periodic threads
+
     // increment the system time
     SystemTime++;
 
-    //set the PendSV flag to start the scheduler
+    // set the PendSV flag to start the scheduler
     SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 }
 
@@ -215,6 +228,28 @@ SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void))
     NumberOfThreads++;
 
     return NO_ERR;
+}
+
+/*
+ * Adds periodic threads to G8RTOS Scheduler
+ * Function will initialize a periodic event struct to represent event.
+ * The struct will be added to a linked list of periodic events
+ * Param Pthread To Add: void-void function for P thread handler
+ * Param period: period of P thread to add
+ * Returns: Error code for adding threads
+ */
+int G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period)
+{
+    /* Implement this */
+}
+
+/*
+ * Puts the current thread into a sleep state.
+ *  param durationMS: Duration of sleep time in ms
+ */
+void sleep(uint32_t durationMS)
+{
+    /* Implement this */
 }
 
 /*

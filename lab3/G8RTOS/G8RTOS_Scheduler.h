@@ -60,6 +60,22 @@ SchedulerRequestCode G8RTOS_Launch();
 SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void));
 
 /*
+ * Adds periodic threads to G8RTOS Scheduler
+ * Function will initialize a periodic event struct to represent event.
+ * The struct will be added to a linked list of periodic events
+ * Param Pthread To Add: void-void function for P thread handler
+ * Param period: period of P thread to add
+ * Returns: Error code for adding threads
+ */
+int G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period);
+
+/*
+ * Puts the current thread into a sleep state.
+ *  param durationMS: Duration of sleep time in ms
+ */
+void sleep(uint32_t durationMS);
+
+/*
  * Cooperatively yields CPU
  */
 void G8RTOS_Yield();
