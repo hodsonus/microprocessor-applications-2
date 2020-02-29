@@ -50,7 +50,7 @@ static int32_t threadStacks[MAX_THREADS][STACKSIZE];
 /* Periodic Event Threads
  * - An array of periodic events to hold pertinent information for each thread
  */
-static ptcb_t Pthread[MAXPTHREADS];
+static ptcb_t Pthread[MAX_PTHREADS];
 
 /*********************************************** Data Structures Used *****************************************************************/
 
@@ -90,9 +90,12 @@ static void InitSysTick(uint32_t numCycles)
  */
 void G8RTOS_Scheduler()
 {
-    // TODO - Check for sleeping and blocked threads
+    // TODO - Check for sleeping threads
 
-    CurrentlyRunningThread = CurrentlyRunningThread->next;
+    tcb_t* thread_to_schedule = CurrentlyRunningThread->next;
+    while (thread_to_schedule->blocked != 0) thread_to_schedule = thread_to_schedule->next;
+
+    CurrentlyRunningThread = thread_to_schedule;
 }
 
 /*
@@ -240,7 +243,8 @@ SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void))
  */
 int G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period)
 {
-    /* Implement this */
+    /* TODO - Implement this */
+    return -1;
 }
 
 /*
@@ -249,7 +253,7 @@ int G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period)
  */
 void sleep(uint32_t durationMS)
 {
-    /* Implement this */
+    /* TODO - Implement this */
 }
 
 /*

@@ -4,8 +4,10 @@
 
 /*********************************************** Dependencies and Externs *************************************************************/
 
+#include <G8RTOS/G8RTOS_Scheduler.h>
 #include <G8RTOS/G8RTOS_CriticalSection.h>
 #include <G8RTOS/G8RTOS_Semaphores.h>
+
 #include <stdint.h>
 #include "msp.h"
 
@@ -38,19 +40,26 @@ void G8RTOS_InitSemaphore(semaphore_t* s, int32_t value)
  */
 void G8RTOS_WaitSemaphore(semaphore_t* s)
 {
-	// TODO - make nonblocking
-
     int32_t IBit_State = StartCriticalSection();
-
-    while((*s) <= 0)
-    {
-        EndCriticalSection(IBit_State);
-        IBit_State = StartCriticalSection();
-    }
 
     (*s)--;
 
-    EndCriticalSection(IBit_State);
+    // if the resource was not available
+    if ( (*s) < 0 )
+    {
+        // block the currently running thread
+        CurrentlyRunningThread->blocked = s;
+
+        EndCriticalSection(IBit_State);
+
+        // and yield the CPU
+        G8RTOS_Yield();
+    }
+    else
+    {
+        // the resource was available and we can continue without blocking
+        EndCriticalSection(IBit_State);
+    }
 }
 
 /*
@@ -62,11 +71,20 @@ void G8RTOS_WaitSemaphore(semaphore_t* s)
  */
 void G8RTOS_SignalSemaphore(semaphore_t* s)
 {
-	// TODO - implement unblocking
-
     int32_t IBit_State = StartCriticalSection();
 
     (*s)++;
+
+    // if the resource was unavailable before we signaled
+    if ( (*s) <= 0 )
+    {
+        // search for the first thread blocked on this semaphore
+        tcb_t* thread = CurrentlyRunningThread->next;
+        while (thread->blocked != s) thread = thread->next;
+
+        // and unblock it
+        thread->blocked = 0;
+    }
 
     EndCriticalSection(IBit_State);
 }

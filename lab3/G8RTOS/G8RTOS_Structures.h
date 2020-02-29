@@ -40,7 +40,15 @@ typedef struct tcb_t
  *      - Contains pointer to the next periodic event - linked list
  */
 
-/* TODO - Create periodic thread struct here */
+typedef struct ptcb_t
+{
+    void (*handler)(void);
+    uint32_t period;
+    uint32_t exec_time;
+    uint32_t curr_time;
+    struct ptcb_t* prev;
+    struct ptcb_t* next;
+} ptcb_t;
 
 /*********************************************** Data Structure Definitions ***********************************************************/
 

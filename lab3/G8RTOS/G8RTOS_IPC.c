@@ -11,7 +11,7 @@
 
 /*********************************************** Defines ******************************************************************************/
 
-#define FIFOSIZE 16
+#define FIFO_SIZE 16
 #define MAX_NUMBER_OF_FIFOS 4
 
 /*********************************************** Defines ******************************************************************************/
@@ -19,17 +19,14 @@
 
 /*********************************************** Data Structures Used *****************************************************************/
 
-/*
- * FIFO struct will hold
- *  - buffer
- *  - head
- *  - tail
- *  - lost data
- *  - current size
- *  - mutex
- */
-
-/* Create FIFO struct here */
+typedef struct FIFO_t {
+    int32_t buffer[FIFO_SIZE];
+    int32_t* head;
+    int32_t* tail;
+    uint32_t lost_data;
+    semaphore_t current_size;
+    semaphore_t mutex;
+} FIFO_t;
 
 /* Array of FIFOS */
 static FIFO_t FIFOs[4];
@@ -41,7 +38,8 @@ static FIFO_t FIFOs[4];
  */
 int G8RTOS_InitFIFO(uint32_t FIFOIndex)
 {
-    /* Implement this */
+    /* TODO - Implement this */
+    return -1;
 }
 
 /*
@@ -53,7 +51,8 @@ int G8RTOS_InitFIFO(uint32_t FIFOIndex)
  */
 uint32_t readFIFO(uint32_t FIFOChoice)
 {
-    /* Implement this */
+    /* TODO - Implement this */
+    return (uint32_t)-1;
 }
 
 /*
@@ -66,7 +65,7 @@ uint32_t readFIFO(uint32_t FIFOChoice)
  */
 int writeFIFO(uint32_t FIFOChoice, uint32_t Data)
 {
-    /* Implement this */
-
+    /* TODO - Implement this */
+    return -1;
 }
 
