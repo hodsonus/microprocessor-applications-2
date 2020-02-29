@@ -5,6 +5,7 @@
 /*********************************************** Dependencies and Externs *************************************************************/
 
 #include <G8RTOS/G8RTOS_Scheduler.h>
+#include <G8RTOS/G8RTOS_CriticalSection.h>
 #include <stdint.h>
 #include "msp.h"
 #include "BSP.h"
@@ -50,7 +51,7 @@ static int32_t threadStacks[MAX_THREADS][STACKSIZE];
 /* Periodic Event Threads
  * - An array of periodic events to hold pertinent information for each thread
  */
-static ptcb_t Pthread[MAX_PTHREADS];
+static ptcb_t periodicThreadControlBlocks[MAX_PTHREADS];
 
 /*********************************************** Data Structures Used *****************************************************************/
 
@@ -65,7 +66,7 @@ static uint32_t NumberOfThreads;
 /*
  * Current Number of Periodic Threads currently in the scheduler
  */
-static uint32_t NumberOfPthreads;
+static uint32_t NumberOfPThreads;
 
 /*********************************************** Private Variables ********************************************************************/
 
@@ -75,11 +76,11 @@ static uint32_t NumberOfPthreads;
 /*
  * Initializes the Systick and Systick Interrupt
  * The Systick interrupt will be responsible for starting a context switch between threads
- * Param "numCycles": Number of cycles for each systick interrupt - use as ClockSys_GetSysFreq() / 10^3 to overflow every 1ms
  */
-static void InitSysTick(uint32_t numCycles)
+static void InitSysTick()
 {
-    SysTick_Config(numCycles);
+    // initialize SysTick for a 1 ms system time tick
+    SysTick_Config(ClockSys_GetSysFreq() / 10^3);
 }
 
 /*
@@ -90,11 +91,17 @@ static void InitSysTick(uint32_t numCycles)
  */
 void G8RTOS_Scheduler()
 {
-    // TODO - Check for sleeping threads
-
+    // start our search for a new thread at the next thread
     tcb_t* thread_to_schedule = CurrentlyRunningThread->next;
-    while (thread_to_schedule->blocked != 0) thread_to_schedule = thread_to_schedule->next;
 
+    // while the thread is blocked or asleep
+    while (thread_to_schedule->blocked != 0 || thread_to_schedule->asleep)
+    {
+        // advance the pointer
+        thread_to_schedule = thread_to_schedule->next;
+    }
+
+    // schedule the thread
     CurrentlyRunningThread = thread_to_schedule;
 }
 
@@ -106,13 +113,45 @@ void G8RTOS_Scheduler()
  */
 void SysTick_Handler()
 {
-    // TODO - handle sleeping and periodic threads
-
     // increment the system time
-    SystemTime++;
+    ++SystemTime;
 
-    // set the PendSV flag to start the scheduler
-    SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+    // handle periodic threads if they exist
+    if (NumberOfPThreads > 0)
+    {
+        // start the pointer at the first periodic thread
+        ptcb_t* pthread = &periodicThreadControlBlocks[0];
+        // and iterate over all of the pthreads
+        for (int i = 0; i < NumberOfPThreads; ++i, pthread = pthread->next)
+        {
+            // if it is time for the ith pthread to execute
+            if (pthread->exec_time == SystemTime)
+            {
+                // update the exec_time to the next time it should execute
+                pthread->exec_time = SystemTime + pthread->period;
+
+                // and execute the periodic task
+                (pthread->handler)();
+            }
+        }
+    }
+
+    // wake up our sleeping threads if necessary
+    // start the pointer at the current thread
+    tcb_t* thread = CurrentlyRunningThread;
+    // and iterate over all of the threads
+    for (int i = 0; i < NumberOfThreads; ++i, thread = thread->next)
+    {
+        // if the current thread is asleep and it is time to wake it up
+        if (thread->asleep && thread->sleep_cnt == SystemTime) {
+
+            // wake it up
+            thread->asleep = false;
+        }
+    }
+
+    // yield the CPU preemptively
+    G8RTOS_Yield();
 }
 
 /*********************************************** Private Functions ********************************************************************/
@@ -150,7 +189,7 @@ void G8RTOS_Init()
  * 	- Sets Context to first thread
  * Returns: Error Code for starting scheduler. This will only return if the scheduler fails
  */
-SchedulerRequestCode G8RTOS_Launch()
+G8RTOSErrorCode G8RTOS_Launch()
 {
     if (NumberOfThreads == 0) return ERR_LAUNCHED_NO_THREADS;
 
@@ -158,10 +197,12 @@ SchedulerRequestCode G8RTOS_Launch()
     CurrentlyRunningThread = &threadControlBlocks[0];
 
     // Initialize SysTick
-    InitSysTick(ClockSys_GetSysFreq() / 10^3);
+    InitSysTick();
 
-    // Set the priorities of PendSV and SysTick to the lowest priority
+    // Set the priority of PendSV to the OS's priority (traditionally the lowest possible)
     __NVIC_SetPriority(PendSV_IRQn, OSINT_PRIORITY);
+
+    // TODO - should SysTick be the same priority as PendSV?
     __NVIC_SetPriority(SysTick_IRQn, OSINT_PRIORITY);
 
     // Call G8RTOS_Start
@@ -181,7 +222,7 @@ SchedulerRequestCode G8RTOS_Launch()
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
  * Returns: Error code for adding threads
  */
-SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void))
+G8RTOSErrorCode G8RTOS_AddThread(void (*threadToAdd)(void))
 {
     // Checks if there are still available threads to insert to scheduler
     if (NumberOfThreads >= MAX_THREADS) return ERR_MAX_THREADS_SCHEDULED;
@@ -241,19 +282,51 @@ SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void))
  * Param period: period of P thread to add
  * Returns: Error code for adding threads
  */
-int G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period)
+G8RTOSErrorCode G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period)
 {
-    /* TODO - Implement this */
-    return -1;
+    // Checks if there are still available threads to insert to scheduler
+    if (NumberOfPThreads >= MAX_PTHREADS) return ERR_MAX_PTHREADS_SCHEDULED;
+
+    if (NumberOfPThreads == 0)
+    {
+        // If this is the first thread, point it to itself
+        periodicThreadControlBlocks[NumberOfPThreads].prev = &periodicThreadControlBlocks[NumberOfPThreads];
+        periodicThreadControlBlocks[NumberOfPThreads].next = &periodicThreadControlBlocks[NumberOfPThreads];
+    }
+    else
+    {
+        // Insert the new thread immediately after the most recently inserted thread
+        periodicThreadControlBlocks[NumberOfPThreads].prev = &periodicThreadControlBlocks[NumberOfPThreads-1];
+        periodicThreadControlBlocks[NumberOfPThreads-1].next = &periodicThreadControlBlocks[NumberOfPThreads];
+
+        // Point the ends towards each other
+        periodicThreadControlBlocks[NumberOfPThreads].next = &periodicThreadControlBlocks[0];
+        periodicThreadControlBlocks[0].prev = &periodicThreadControlBlocks[NumberOfPThreads];
+    }
+
+    periodicThreadControlBlocks[NumberOfPThreads].handler = PthreadToAdd;
+    periodicThreadControlBlocks[NumberOfPThreads].exec_time = SystemTime + period;
+    periodicThreadControlBlocks[NumberOfPThreads].period = period;
+
+    NumberOfPThreads++;
+
+    return NO_ERR;
 }
 
 /*
  * Puts the current thread into a sleep state.
  *  param durationMS: Duration of sleep time in ms
  */
-void sleep(uint32_t durationMS)
+void G8RTOS_Sleep(uint32_t duration)
 {
-    /* TODO - Implement this */
+    // sleep_cnt is the time that this thread should be woken up
+    CurrentlyRunningThread->sleep_cnt = SystemTime + duration;
+
+    // set the sleep flag so the scheduler knows to skip this thread
+    CurrentlyRunningThread->asleep = true;
+
+    // yield the CPU
+    G8RTOS_Yield();
 }
 
 /*
@@ -261,6 +334,7 @@ void sleep(uint32_t durationMS)
  */
 void G8RTOS_Yield()
 {
+    // set the PendSV flag to start the scheduler
     SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
 }
 

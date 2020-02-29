@@ -10,12 +10,17 @@ void main(void)
 {
     G8RTOS_Init();
 
-    G8RTOS_InitSemaphore(&led, 1);
-    G8RTOS_InitSemaphore(&sensor, 1);
+    // TODO - init GPIO ports
 
-    G8RTOS_AddThread(&task0);
-    G8RTOS_AddThread(&task1);
-    G8RTOS_AddThread(&task2);
+    G8RTOS_AddThread(&thread0);
+    G8RTOS_AddThread(&thread1);
+    G8RTOS_AddThread(&thread2);
+    G8RTOS_AddThread(&thread3);
+    G8RTOS_AddThread(&thread4);
+    G8RTOS_AddThread(&thread5);
+
+    G8RTOS_AddPeriodicEvent(&pthread0, 100);
+    G8RTOS_AddPeriodicEvent(&pthread1, 1000);
 
     G8RTOS_Launch();
 }

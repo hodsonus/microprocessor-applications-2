@@ -9,20 +9,21 @@
 
 /*********************************************** Sizes and Limits *********************************************************************/
 #define MAX_THREADS 6
-#define MAX_PTHREADS 2
+#define MAX_PTHREADS 6
 #define STACKSIZE 1024
 #define OSINT_PRIORITY 7
 /*********************************************** Sizes and Limits *********************************************************************/
 
 
 /*********************************************** Enums ********************************************************************************/
-typedef enum SchedulerRequestCode
+typedef enum G8RTOSErrorCode
 {
     NO_ERR = 0,
     ERR_MAX_THREADS_SCHEDULED = -1,
     ERR_LAUNCHED_NO_THREADS = -2,
-    ERR_UNKN_FAILURE = -3,
-} SchedulerRequestCode;
+    ERR_MAX_PTHREADS_SCHEDULED = -3,
+    ERR_UNKN_FAILURE = -4,
+} G8RTOSErrorCode;
 /*********************************************** Enums ********************************************************************************/
 
 
@@ -47,7 +48,7 @@ void G8RTOS_Init();
  * 	- Sets Context to first thread
  * Returns: Error Code for starting scheduler. This will only return if the scheduler fails
  */
-SchedulerRequestCode G8RTOS_Launch();
+G8RTOSErrorCode G8RTOS_Launch();
 
 /*
  * Adds threads to G8RTOS Scheduler
@@ -58,7 +59,7 @@ SchedulerRequestCode G8RTOS_Launch();
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
  * Returns: Error code for adding threads
  */
-SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void));
+G8RTOSErrorCode G8RTOS_AddThread(void (*threadToAdd)(void));
 
 /*
  * Adds periodic threads to G8RTOS Scheduler
@@ -68,13 +69,13 @@ SchedulerRequestCode G8RTOS_AddThread(void (*threadToAdd)(void));
  * Param period: period of P thread to add
  * Returns: Error code for adding threads
  */
-int G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period);
+G8RTOSErrorCode G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period);
 
 /*
  * Puts the current thread into a sleep state.
- *  param durationMS: Duration of sleep time in ms
+ * param duration: Duration of sleep time in ms
  */
-void sleep(uint32_t durationMS);
+void G8RTOS_Sleep(uint32_t duration);
 
 /*
  * Cooperatively yields CPU

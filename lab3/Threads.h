@@ -1,18 +1,20 @@
 /*
  * Threads.h
  *
- *  Created on: Jan 31, 2020
+ *  Created on: Feb 2, 2020
  *      Author: johnhodson
  */
 
 #ifndef THREADS_H_
 #define THREADS_H_
 
-semaphore_t sensor;
-semaphore_t led;
-
-void task0(void);
-void task1(void);
-void task2(void);
+void thread0(void);
+void thread1(void);
+void thread2(void);
+void thread3(void);
+void thread4(void);
+void thread5(void);
+void pthread0(void);
+void pthread1(void);
 
 #endif /* THREADS_H_ */
