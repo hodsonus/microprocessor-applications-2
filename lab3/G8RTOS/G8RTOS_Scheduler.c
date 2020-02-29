@@ -189,7 +189,7 @@ void G8RTOS_Init()
  * 	- Sets Context to first thread
  * Returns: Error Code for starting scheduler. This will only return if the scheduler fails
  */
-G8RTOSErrorCode G8RTOS_Launch()
+G8RTOS_Scheduler_Error G8RTOS_Launch()
 {
     if (NumberOfThreads == 0) return ERR_LAUNCHED_NO_THREADS;
 
@@ -222,7 +222,7 @@ G8RTOSErrorCode G8RTOS_Launch()
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
  * Returns: Error code for adding threads
  */
-G8RTOSErrorCode G8RTOS_AddThread(void (*threadToAdd)(void))
+G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void))
 {
     // Checks if there are still available threads to insert to scheduler
     if (NumberOfThreads >= MAX_THREADS) return ERR_MAX_THREADS_SCHEDULED;
@@ -271,7 +271,7 @@ G8RTOSErrorCode G8RTOS_AddThread(void (*threadToAdd)(void))
 
     NumberOfThreads++;
 
-    return NO_ERR;
+    return OK;
 }
 
 /*
@@ -282,7 +282,7 @@ G8RTOSErrorCode G8RTOS_AddThread(void (*threadToAdd)(void))
  * Param period: period of P thread to add
  * Returns: Error code for adding threads
  */
-G8RTOSErrorCode G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period)
+G8RTOS_Scheduler_Error G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period)
 {
     // Checks if there are still available threads to insert to scheduler
     if (NumberOfPThreads >= MAX_PTHREADS) return ERR_MAX_PTHREADS_SCHEDULED;
@@ -310,7 +310,7 @@ G8RTOSErrorCode G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t per
 
     NumberOfPThreads++;
 
-    return NO_ERR;
+    return OK;
 }
 
 /*

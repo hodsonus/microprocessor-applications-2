@@ -7,10 +7,9 @@
 
 #include <RGBLeds.h>
 
-// TODO
 void LP3943_ColorSet(uint32_t unit, uint32_t PWM_DATA)
 {
-
+    /* TODO - complete LP3493 PWM write functionality */
 }
 
 void LP3943_LedModeSet(uint32_t unit, uint16_t LED_DATA)

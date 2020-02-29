@@ -16,14 +16,14 @@
 
 
 /*********************************************** Enums ********************************************************************************/
-typedef enum G8RTOSErrorCode
+typedef enum G8RTOS_Scheduler_Error
 {
-    NO_ERR = 0,
+    OK = 0,
     ERR_MAX_THREADS_SCHEDULED = -1,
     ERR_LAUNCHED_NO_THREADS = -2,
     ERR_MAX_PTHREADS_SCHEDULED = -3,
     ERR_UNKN_FAILURE = -4,
-} G8RTOSErrorCode;
+} G8RTOS_Scheduler_Error;
 /*********************************************** Enums ********************************************************************************/
 
 
@@ -48,7 +48,7 @@ void G8RTOS_Init();
  * 	- Sets Context to first thread
  * Returns: Error Code for starting scheduler. This will only return if the scheduler fails
  */
-G8RTOSErrorCode G8RTOS_Launch();
+G8RTOS_Scheduler_Error G8RTOS_Launch();
 
 /*
  * Adds threads to G8RTOS Scheduler
@@ -59,7 +59,7 @@ G8RTOSErrorCode G8RTOS_Launch();
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
  * Returns: Error code for adding threads
  */
-G8RTOSErrorCode G8RTOS_AddThread(void (*threadToAdd)(void));
+G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void));
 
 /*
  * Adds periodic threads to G8RTOS Scheduler
@@ -69,7 +69,7 @@ G8RTOSErrorCode G8RTOS_AddThread(void (*threadToAdd)(void));
  * Param period: period of P thread to add
  * Returns: Error code for adding threads
  */
-G8RTOSErrorCode G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period);
+G8RTOS_Scheduler_Error G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period);
 
 /*
  * Puts the current thread into a sleep state.

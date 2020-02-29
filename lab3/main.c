@@ -12,6 +12,9 @@ void main(void)
 
     // TODO - init GPIO ports
 
+    G8RTOS_InitSemaphore(&led_mutex, 1);
+    G8RTOS_InitSemaphore(&sensor_mutex, 1);
+
     G8RTOS_AddThread(&thread0);
     G8RTOS_AddThread(&thread1);
     G8RTOS_AddThread(&thread2);
