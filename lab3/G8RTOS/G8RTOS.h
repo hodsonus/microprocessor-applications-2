@@ -7,6 +7,6 @@
 
 #include <G8RTOS/G8RTOS_Scheduler.h>
 #include <G8RTOS/G8RTOS_Semaphores.h>
-#include <stdint.h>
+#include <G8RTOS/G8RTOS_IPC.h>
 
 #endif /* G8RTOS_H_ */

@@ -48,7 +48,7 @@ G8RTOS_FIFO_Error G8RTOS_InitFIFO(uint32_t i)
     G8RTOS_InitSemaphore(&(FIFOs[i].current_size), 0);
     G8RTOS_InitSemaphore(&(FIFOs[i].mutex), 1);
 
-    return OK;
+    return OK_FIFO;
 }
 
 /*
@@ -102,7 +102,7 @@ G8RTOS_FIFO_Error G8RTOS_WriteFIFO(uint32_t i, int32_t data)
     if (i >= MAX_NUMBER_OF_FIFOS) return ERR_FIFO_INDEX;
 
     // default error status
-    G8RTOS_FIFO_Error status = OK;
+    G8RTOS_FIFO_Error status = OK_FIFO;
 
     // wait for exclusive access to the FIFO
     G8RTOS_WaitSemaphore(&(FIFOs[i].mutex));
@@ -125,7 +125,7 @@ G8RTOS_FIFO_Error G8RTOS_WriteFIFO(uint32_t i, int32_t data)
         }
 
         // change the status from the default to an error
-        status = ERR_OVERWROTE_DATA;
+        status = ERR_DATA_OVERWRITTEN;
     }
     else
     {

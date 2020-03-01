@@ -18,7 +18,7 @@
 /*********************************************** Enums ********************************************************************************/
 typedef enum G8RTOS_Scheduler_Error
 {
-    OK = 0,
+    OK_SCHED = 0,
     ERR_MAX_THREADS_SCHEDULED = -1,
     ERR_LAUNCHED_NO_THREADS = -2,
     ERR_MAX_PTHREADS_SCHEDULED = -3,

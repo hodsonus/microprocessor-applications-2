@@ -271,7 +271,7 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void))
 
     NumberOfThreads++;
 
-    return OK;
+    return OK_SCHED;
 }
 
 /*
@@ -310,7 +310,7 @@ G8RTOS_Scheduler_Error G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint3
 
     NumberOfPThreads++;
 
-    return OK;
+    return OK_SCHED;
 }
 
 /*
