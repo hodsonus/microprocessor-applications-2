@@ -48,66 +48,66 @@ void LP3943_LedModeSet(uint32_t unit, uint16_t LED_DATA)
     // 8th bit -> R/~W
     // Set initial slave address since we are master
     const uint8_t BASE_ADDR = 0x60;
-    UCB2I2CSA = BASE_ADDR + unit;
+    EUSCI_B2->I2CSA = BASE_ADDR + unit;
 
     // Generate START condition, send chip address
-    UCB2CTLW0 |= UCTXSTT;
+    EUSCI_B2->CTLW0 |= EUSCI_B_CTLW0_TXSTT;
 
     // Wait for the start flag to go low
     // Wait for buffer availability
     // eUSCI_B transmit interrupt flag 0. UCTXIFG0 set when UCBxTXBUF empty
-    while(UCB2CTLW0 & UCTXSTT);
+    while(EUSCI_B2->CTLW0 & EUSCI_B_CTLW0_TXSTT);
 
     // Fill TXBUF with register address and auto increment, wait for buffer
-    UCB2TXBUF = 0x16;
-    while(!(UCB2IFG & UCTXIFG0));
+    EUSCI_B2->TXBUF = 0x16;
+    while(!(EUSCI_B2->IFG & EUSCI_B_IFG_TXIFG0));
 
     // Fill TXBUF with LS0 data for the LP3943, wait for buffer
-    UCB2TXBUF = LSO_data;
-    while(!(UCB2IFG & UCTXIFG0));
+    EUSCI_B2->TXBUF = LSO_data;
+    while(!(EUSCI_B2->IFG & EUSCI_B_IFG_TXIFG0));
 
     // Fill TXBUF with LS1 data for the LP3943, wait for buffer
-    UCB2TXBUF = LS1_data;
-    while(!(UCB2IFG & UCTXIFG0));
+    EUSCI_B2->TXBUF = LS1_data;
+    while(!(EUSCI_B2->IFG & EUSCI_B_IFG_TXIFG0));
 
     // Fill TXBUF with LS2 data for the LP3943, wait for buffer
-    UCB2TXBUF = LS2_data;
-    while(!(UCB2IFG & UCTXIFG0));
+    EUSCI_B2->TXBUF = LS2_data;
+    while(!(EUSCI_B2->IFG & EUSCI_B_IFG_TXIFG0));
 
     // Fill TXBUF with LS3 data for the LP3943, wait for buffer
-    UCB2TXBUF = LS3_data;
-    while(!(UCB2IFG & UCTXIFG0));
+    EUSCI_B2->TXBUF = LS3_data;
+    while(!(EUSCI_B2->IFG & EUSCI_B_IFG_TXIFG0));
 
     // Generate STOP condition and wait for the STOP bit to go low
-    UCB2CTLW0 |= UCTXSTP;
-    while(UCB2CTLW0 & UCTXSTP);
+    EUSCI_B2->CTLW0 |= EUSCI_B_CTLW0_TXSTP;
+    while(EUSCI_B2->CTLW0 & EUSCI_B_CTLW0_TXSTP);
 }
 
 void init_RGBLEDS()
 {
     // Software reset enable
-    UCB2CTLW0 = UCSWRST;
+    EUSCI_B2->CTLW0 = EUSCI_B_CTLW0_SWRST;
 
     // Initialize I2C master
     // Sets as master, I2C mode, Clock sync, SMCLK source, Transmitter
-    UCB2CTLW0 |= UCMST
-               | UCMODE_3
-               | UCSYNC
-               | UCSSEL_2
-               | UCTR;
+    EUSCI_B2->CTLW0 |= EUSCI_B_CTLW0_MST
+                    | EUSCI_B_CTLW0_MODE_3
+                    | EUSCI_B_CTLW0_SYNC
+                    | EUSCI_B_CTLW0_UCSSEL_2
+                    | EUSCI_B_CTLW0_TR;
 
     // Sets the FCLCK as 400khz
     // Presumes that the SMCLK is selected as source and FSMCLK is 12MHz
-    UCB2BRW = 30;
+    EUSCI_B2->BRW = 30;
 
     // In conjunction with the next line, this sets the pins as I2C mode
     // (table found on pg. 143 of SLAS826E)
     // Sets P3.6 as UCB2_SDA and 3.7 as UCB2_SCL
-    P3SEL0 |= BIT6 | BIT7;
-    P3SEL1 &= ~BIT6 & ~BIT7;
+    P3->SEL0 |= BIT6 | BIT7;
+    P3->SEL1 &= ~BIT6 & ~BIT7;
 
     // Bitwise ANDing of all bits except UCSWRST (appropriate settings enabled)
-    UCB2CTLW0 &= ~UCSWRST;
+    EUSCI_B2->CTLW0 &= ~EUSCI_B_CTLW0_SWRST;
 
     uint16_t UNIT_OFF = 0x0000;
 
