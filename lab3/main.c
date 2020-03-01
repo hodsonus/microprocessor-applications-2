@@ -13,8 +13,8 @@ void main(void)
     G8RTOS_Init();
 
     // initialize the GPIO pins used in the threads
-    P4->DIR &= ~BIT5 & ~BIT7;
-    P5->DIR &= ~BIT4;
+    P4->DIR |= BIT5 | BIT7;
+    P5->DIR |= BIT4;
 
     // initialize our FIFOs
     G8RTOS_InitFIFO(JOYSTICK_FIFO);
