@@ -12,6 +12,7 @@
 #define MAX_PTHREADS 6
 #define STACKSIZE 1024
 #define OSINT_PRIORITY 7
+#define SYSTICK_PRIORITY 3
 /*********************************************** Sizes and Limits *********************************************************************/
 
 

@@ -36,8 +36,8 @@ void thread0(void)
         // Send data to temperature FIFO
         G8RTOS_WriteFIFO(TEMP_FIFO, temperature);
 
-        // Toggle an available GPIO pin (P2.0)
-        BITBAND_PERI(P2->OUT, 0) = ~BITBAND_PERI(P2->OUT, 0);
+        // Toggle an available GPIO pin (P4.5)
+        BITBAND_PERI(P4->OUT, 5) = ~BITBAND_PERI(P4->OUT, 5);
 
         // Sleep for 500 ms
         G8RTOS_Sleep(500);
@@ -57,8 +57,8 @@ void thread1(void)
         // Send data to light FIFO
         G8RTOS_WriteFIFO(LIGHT_FIFO, light_data);
 
-        // Toggle an available GPIO pin (P2.1)
-        BITBAND_PERI(P2->OUT, 1) = ~BITBAND_PERI(P2->OUT, 1);
+        // Toggle an available GPIO pin (P4.7)
+        BITBAND_PERI(P4->OUT, 7) = ~BITBAND_PERI(P4->OUT, 7);
 
         // Sleep for 200 ms
         G8RTOS_Sleep(200);
@@ -249,8 +249,8 @@ void pthread0(void)
     // Write X-coordinate to Joystick FIFO
     G8RTOS_WriteFIFO(JOYSTICK_FIFO, x_coord);
 
-    // Toggle an available GPIO pin (P2.2)
-    BITBAND_PERI(P2->OUT, 2) = ~BITBAND_PERI(P2->OUT, 2);
+    // Toggle an available GPIO pin (P5.4)
+    BITBAND_PERI(P5->OUT, 4) = ~BITBAND_PERI(P5->OUT, 4);
 }
 
 void pthread1(void)

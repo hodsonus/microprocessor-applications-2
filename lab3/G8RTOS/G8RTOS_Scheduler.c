@@ -203,7 +203,7 @@ G8RTOS_Scheduler_Error G8RTOS_Launch()
     __NVIC_SetPriority(PendSV_IRQn, OSINT_PRIORITY);
 
     // TODO - should SysTick be the same priority as PendSV?
-    __NVIC_SetPriority(SysTick_IRQn, OSINT_PRIORITY);
+    __NVIC_SetPriority(SysTick_IRQn, SYSTICK_PRIORITY);
 
     // Call G8RTOS_Start
     G8RTOS_Start();
