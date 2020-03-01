@@ -10,6 +10,8 @@
 #include <BSP.h>
 #include "Threads.h"
 
+#define NUM_READINGS 10
+
 int32_t joystick_decayed_avg;
 int32_t temperature_farenheit;
 bool light_flag;
@@ -63,17 +65,52 @@ void thread1(void)
     }
 }
 
+static int sum(int arr[], int n)
+{
+    int sum = 0;
+    for (int i = 0; i < n; ++i) sum += arr[i];
+    return sum;
+}
+
+static int square_root(int n)
+{
+    int xk, xkp1 = n;
+
+    do
+    {
+        xk = xkp1;
+        xkp1 = (xk + (n / xk)) / 2;
+    } while (abs(xkp1 - xk) >= 1);
+
+    return xkp1;
+}
+
 void thread2(void)
 {
-    int32_t light_data;
+    /* The idea here is to keep track of the N most recent readings from
+     * the light sensor. Since the N+1st reading has to fall off each time
+     * that we read, we must keep track of every value in a queue. */
+
+    int32_t new_light_data;
+    int i = 0;
+    int light_readings[NUM_READINGS];
+    int RMS;
+
     while (1)
     {
-        // Read light FIFO
-        light_data = G8RTOS_ReadFIFO(LIGHT_FIFO);
+        // read light FIFO
+        new_light_data = G8RTOS_ReadFIFO(LIGHT_FIFO);
 
-        // TODO - Calculate RMS value
-        uint32_t RMS = 1;
+        // calculate xi^2/NUM_READINGS and place in our queue
+        light_readings[i] = (new_light_data * new_light_data) / NUM_READINGS;
 
+        // update insertion index, wrapping around if necessary
+        i = (i+1) % NUM_READINGS;
+
+        // calculate the sum and take the square root of it to find the RMS
+        RMS = square_root( sum(light_readings, NUM_READINGS) );
+
+        // set or clear the light_flag according to Lab Manual spec
         light_flag = RMS < 5000;
     }
 }
@@ -226,17 +263,4 @@ void pthread1(void)
         // Print out decayed average value of the Joystick’s X-coordinate via UART
         BackChannelPrintIntVariable("joystick_decayed_avg", joystick_decayed_avg);
     }
-}
-
-static int square_root(int n)
-{
-    int xk, xkp1 = n;
-
-    do
-    {
-        xk = xkp1;
-        xkp1 = (1/2) * (xk + (n / xk));
-    } while (abs(xkp1 - xk) >= 1);
-
-    return xkp1;
 }

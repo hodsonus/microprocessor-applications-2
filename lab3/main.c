@@ -1,5 +1,6 @@
 #include <G8RTOS/G8RTOS.h>
 #include "Threads.h"
+#include "msp.h"
 
 /* ---------------------------------------- MAIN ---------------------------------------- */
 
@@ -12,9 +13,7 @@ void main(void)
     G8RTOS_Init();
 
     // initialize the GPIO pins used in the threads
-    GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN0 |
-                                      GPIO_PIN1 |
-                                      GPIO_PIN2);
+    P2->DIR &= ~BIT0 & ~BIT1 & ~BIT2;
 
     // initialize our FIFOs
     G8RTOS_InitFIFO(JOYSTICK_FIFO);
