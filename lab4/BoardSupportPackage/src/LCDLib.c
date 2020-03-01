@@ -41,6 +41,7 @@ static void LCD_initSPI()
      * P10.5 - TP CS 
      */
 
+    /* TODO */
 }
 
 /*******************************************************************************
@@ -86,7 +87,9 @@ void LCD_DrawRectangle(int16_t xStart, int16_t xEnd, int16_t yStart, int16_t yEn
 
     /* Set index to GRAM */ 
 
-    /* Send out data only to the entire area */ 
+    /* Send out data only to the entire area */
+
+    /* TODO */
 }
 
 /******************************************************************************
@@ -179,7 +182,9 @@ void LCD_Clear(uint16_t Color)
 
     /* Start data transmittion */ 
 
-    // You'll need to call LCD_Write_Data_Start() and then send out only data to fill entire screen with color 
+    // You'll need to call LCD_Write_Data_Start() and then send out only data to fill entire screen with color
+
+    /* TODO */
 }
 
 /******************************************************************************
@@ -198,6 +203,8 @@ void LCD_SetPoint(uint16_t Xpos, uint16_t Ypos, uint16_t color)
     /* Set cursor to Xpos and Ypos */ 
 
     /* Write color to GRAM reg */ 
+
+    /* TODO */
 }
 
 /*******************************************************************************
@@ -213,6 +220,8 @@ inline void LCD_Write_Data_Only(uint16_t data)
     /* Send out MSB */ 
 
     /* Send out LSB */ 
+
+    /* TODO */
 
 }
 
@@ -248,6 +257,8 @@ inline uint16_t LCD_ReadReg(uint16_t LCD_Reg)
     /* Write 16-bit Index */
 
     /* Return 16-bit Reg using LCD_ReadData() */
+
+    /* TODO */
 }
 
 /*******************************************************************************
@@ -285,6 +296,8 @@ inline uint8_t SPISendRecvByte (uint8_t byte)
     /* Wait as long as busy */ 
 
     /* Return received value*/
+
+    /* TODO */
 
 }
 
@@ -338,6 +351,8 @@ inline void LCD_WriteReg(uint16_t LCD_Reg, uint16_t LCD_RegValue)
 
     /* Write 16-bit Reg Data */
 
+    /* TODO */
+
 }
 
 /*******************************************************************************
@@ -356,6 +371,8 @@ inline void LCD_SetCursor(uint16_t Xpos, uint16_t Ypos )
     /* Set horizonal GRAM coordinate (Ypos) */ 
 
     /* Set vertical GRAM coordinate (Xpos) */
+
+    /* TODO */
 
 }
 
@@ -464,6 +481,8 @@ Point TP_ReadXY()
     /* Read Y coord. */ 
     
     /* Return point  */ 
+
+    /* TODO */
 }
 
 /************************************  Public Functions  *******************************************/

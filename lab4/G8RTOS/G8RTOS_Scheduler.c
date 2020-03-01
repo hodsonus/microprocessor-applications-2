@@ -171,7 +171,7 @@ uint32_t SystemTime;
  * Sets variables to an initial state (system time and number of threads)
  * Enables board for highest speed clock and disables watchdog
  */
-void G8RTOS_Init()
+void G8RTOS_Init(bool LCD_usingTP)
 {
     // Initialize system time to zero
     SystemTime = 0;
@@ -180,7 +180,7 @@ void G8RTOS_Init()
     NumberOfThreads = 0;
 
     // Initialize all hardware on the board
-    BSP_InitBoard();
+    BSP_InitBoard(LCD_usingTP);
 }
 
 /*

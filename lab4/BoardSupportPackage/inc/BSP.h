@@ -18,11 +18,12 @@
 #include "ClockSys.h"
 #include "Joystick.h"
 #include "RGBLeds.h"
+#include "LCDLib.h"
 
 /********************************** Public Functions **************************************/
 
 /* Initializes the entire board */
-extern void BSP_InitBoard();
+extern void BSP_InitBoard(bool LCD_usingTP);
 
 /********************************** Public Functions **************************************/
 

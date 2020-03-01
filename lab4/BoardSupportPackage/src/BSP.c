@@ -11,7 +11,7 @@
 
 
 /* Initializes the entire board */
-void BSP_InitBoard()
+void BSP_InitBoard(bool LCD_usingTP)
 {
 	/* Disable Watchdog */
 	WDT_A_clearTimer();
@@ -43,6 +43,7 @@ void BSP_InitBoard()
 
 	/* Init RGB LEDs */
 	init_RGBLEDS();
+
+	/* Init LCD */
+	LCD_Init(LCD_usingTP);
 }
-
-

@@ -41,7 +41,7 @@ extern uint32_t SystemTime;
 /*
  * Initializes variables and hardware for G8RTOS usage
  */
-void G8RTOS_Init();
+void G8RTOS_Init(bool LCD_usingTP);
 
 /*
  * Starts G8RTOS Scheduler
