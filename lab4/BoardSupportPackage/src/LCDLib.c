@@ -511,8 +511,6 @@ void LCD_Init(bool usingTP)
     Delay(50); /* delay 50 ms */
 
     LCD_Clear(LCD_BLACK);
-
-    LCD_Text(0, 0, "G8RTOS", LCD_RED);
 }
 
 /*******************************************************************************

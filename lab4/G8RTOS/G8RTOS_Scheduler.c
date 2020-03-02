@@ -181,6 +181,7 @@ void G8RTOS_Init(bool LCD_usingTP)
 
     // Initialize all hardware on the board
     BSP_InitBoard(LCD_usingTP);
+    LCD_Text(MAX_SCREEN_X/2-25, MAX_SCREEN_Y/2-25, "G8RTOS", LCD_RED);
 }
 
 /*
