@@ -58,7 +58,7 @@ static void LCD_initSPI()
 
     // Configure port 10.1-10.3 for SPI (table found on pg. 145 of SLAS826E)
     P10->SEL0 |= BIT1 | BIT2 | BIT3;
-    P10->SEL0 &= ~BIT1 & ~BIT2 & ~BIT3;
+    P10->SEL1 &= ~BIT1 & ~BIT2 & ~BIT3;
 
     // Set the LCD and the TP CS as outputs
     P10->DIR |= BIT4 | BIT5;
