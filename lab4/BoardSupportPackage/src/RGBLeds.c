@@ -90,11 +90,11 @@ void init_RGBLEDS()
 
     // Initialize I2C master
     // Sets as master, I2C mode, Clock sync, SMCLK source, Transmitter
-    EUSCI_B2->CTLW0 |= EUSCI_B_CTLW0_MST
-                    | EUSCI_B_CTLW0_MODE_3
-                    | EUSCI_B_CTLW0_SYNC
-                    | EUSCI_B_CTLW0_UCSSEL_2
-                    | EUSCI_B_CTLW0_TR;
+    EUSCI_B2->CTLW0 |= EUSCI_B_CTLW0_MST |
+                       EUSCI_B_CTLW0_MODE_3 |
+                       EUSCI_B_CTLW0_SYNC |
+                       EUSCI_B_CTLW0_UCSSEL_2 |
+                       EUSCI_B_CTLW0_TR;
 
     // Sets the FCLCK as 400khz
     // Presumes that the SMCLK is selected as source and FSMCLK is 12MHz

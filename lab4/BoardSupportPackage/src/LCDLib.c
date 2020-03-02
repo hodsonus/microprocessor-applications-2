@@ -41,7 +41,30 @@ static void LCD_initSPI()
      * P10.5 - TP CS 
      */
 
-    /* TODO */
+    // Set UCSWRST
+    EUSCI_B3->CTLW0 = EUSCI_B_CTLW0_SWRST;
+
+    // Initialize all eUSCI registers
+    EUSCI_B3->CTLW0 |= EUSCI_B_CTLW0_MST | // Master
+                       EUSCI_B_CTLW0_MODE_0 | // 3-pin SPI
+                       EUSCI_B_CTLW0_SYNC | // Synchronous (SPI, not UART) mode
+                       EUSCI_B_CTLW0_MSB | // TODO - MSB first?
+                       EUSCI_B_CTLW0_UCSSEL_2 | // SMCLK selected
+                       EUSCI_B_CTLW0_CKPL; // High polarity for inactive state
+    // 8 bit is selected by default (when 7bit is not present)
+
+    // Don't use bit clock prescaler (12MHz?)
+    EUSCI_B3->BRW = 0x0000;
+
+    // Configure port 10.1-10.3 for SPI (table found on pg. 145 of SLAS826E)
+    P10->SEL0 |= BIT1 | BIT2 | BIT3;
+    P10->SEL0 &= ~BIT1 & ~BIT2 & ~BIT3;
+
+    // Set the LCD and the TP CS as outputs
+    P10->DIR |= BIT4 | BIT5;
+
+    // Clear UCSWRST through software
+    EUSCI_B3->CTLW0 &= ~EUSCI_B_CTLW0_SWRST;
 }
 
 /*******************************************************************************
@@ -75,21 +98,40 @@ static void LCD_reset()
  * Return         : None
  * Attention      : Must draw from left to right, top to bottom!
  *******************************************************************************/
-void LCD_DrawRectangle(int16_t xStart, int16_t xEnd, int16_t yStart, int16_t yEnd, uint16_t Color)
+void LCD_DrawRectangle(uint16_t xStart, uint16_t xEnd, uint16_t yStart, uint16_t yEnd, uint16_t Color)
 {
     // Optimization complexity: O(64 + 2N) Bytes Written 
 
-    /* Check special cases for out of bounds */
+    /* Check special cases for out of bounds.
+     * The first two checks constrain it to be a valid rectangle that starts
+     * before it ends in both the x and y directions. We then must check to
+     * see if the outside point is contained within the screen, thus removing
+     * all degrees of freedom, verifying its validity. The coordinates may
+     * never be less than 0, as they are unsigned integers. */
+    if (xStart > xEnd || yStart > yEnd ||
+        yEnd >= MAX_SCREEN_X || xEnd >= MAX_SCREEN_X) return;
 
     /* Set window area for high-speed RAM write */
+    LCD_WriteReg(HOR_ADDR_START_POS, yStart);     /* Horizontal GRAM Start Address */
+    LCD_WriteReg(HOR_ADDR_END_POS, yEnd); /* Horizontal GRAM End Address */
+    LCD_WriteReg(VERT_ADDR_START_POS, xStart);    /* Vertical GRAM Start Address */
+    LCD_WriteReg(VERT_ADDR_END_POS, xEnd); /* Vertical GRAM Start Address */
 
-    /* Set cursor */ 
+    /* Set cursor */
+    LCD_SetCursor(xStart, yStart);
 
-    /* Set index to GRAM */ 
+    /* Set index to GRAM */
+    LCD_WriteIndex(GRAM);
 
     /* Send out data only to the entire area */
-
-    /* TODO */
+    SPI_CS_LCD_LOW;
+    LCD_Write_Data_Start();
+    int pixels = (xEnd-xStart+1) * (yEnd-yStart+1);
+    for (int i = 0; i < pixels; ++i)
+    {
+        LCD_Write_Data_Only(Color);
+    }
+    SPI_CS_LCD_LOW;
 }
 
 /******************************************************************************
@@ -175,16 +217,25 @@ void LCD_Text(uint16_t Xpos, uint16_t Ypos, uint8_t *str, uint16_t Color)
 void LCD_Clear(uint16_t Color)
 {
     /* Set area back to span the entire LCD */
+    LCD_WriteReg(HOR_ADDR_START_POS, 0x0000);     /* Horizontal GRAM Start Address */
+    LCD_WriteReg(HOR_ADDR_END_POS, (MAX_SCREEN_Y - 1));  /* Horizontal GRAM End Address */
+    LCD_WriteReg(VERT_ADDR_START_POS, 0x0000);    /* Vertical GRAM Start Address */
+    LCD_WriteReg(VERT_ADDR_END_POS, (MAX_SCREEN_X - 1)); /* Vertical GRAM Start Address */
     
     /* Set cursor to (0,0) */ 
+    LCD_SetCursor(0, 0);
 
-    /* Set write index to GRAM */     
+    /* Set write index to GRAM */
+    LCD_WriteIndex(GRAM);
 
-    /* Start data transmittion */ 
-
-    // You'll need to call LCD_Write_Data_Start() and then send out only data to fill entire screen with color
-
-    /* TODO */
+    /* Start data transmission */
+    SPI_CS_LCD_LOW;
+    LCD_Write_Data_Start();
+    for (int i = 0; i < SCREEN_SIZE; ++i)
+    {
+        LCD_Write_Data_Only(Color);
+    }
+    SPI_CS_LCD_LOW;
 }
 
 /******************************************************************************
@@ -198,13 +249,14 @@ void LCD_Clear(uint16_t Color)
  *******************************************************************************/
 void LCD_SetPoint(uint16_t Xpos, uint16_t Ypos, uint16_t color)
 {
-    /* Should check for out of bounds */ 
+    /* Check for out of bounds */
+    if (Xpos >= MAX_SCREEN_X || Ypos >= MAX_SCREEN_Y) return;
 
-    /* Set cursor to Xpos and Ypos */ 
+    /* Set cursor to Xpos and Ypos */
+    LCD_SetCursor(Xpos, Ypos);
 
     /* Write color to GRAM reg */ 
-
-    /* TODO */
+    LCD_WriteReg(GRAM, color);
 }
 
 /*******************************************************************************
@@ -217,12 +269,11 @@ void LCD_SetPoint(uint16_t Xpos, uint16_t Ypos, uint16_t color)
  *******************************************************************************/
 inline void LCD_Write_Data_Only(uint16_t data)
 {
-    /* Send out MSB */ 
+    /* Send out MSB */
+    SPISendRecvByte((data >> 8));
 
-    /* Send out LSB */ 
-
-    /* TODO */
-
+    /* Send out LSB */
+    SPISendRecvByte((data & 0xFF));
 }
 
 /*******************************************************************************
@@ -235,13 +286,13 @@ inline void LCD_Write_Data_Only(uint16_t data)
  *******************************************************************************/
 inline void LCD_WriteData(uint16_t data)
 {
-    SPI_CS_LOW;
+    SPI_CS_LCD_LOW;
 
     SPISendRecvByte(SPI_START | SPI_WR | SPI_DATA);    /* Write : RS = 1, RW = 0       */
     SPISendRecvByte((data >>   8));                    /* Write D8..D15                */
     SPISendRecvByte((data & 0xFF));                    /* Write D0..D7                 */
 
-    SPI_CS_HIGH;
+    SPI_CS_LCD_HIGH;
 }
 
 /*******************************************************************************
@@ -255,10 +306,10 @@ inline void LCD_WriteData(uint16_t data)
 inline uint16_t LCD_ReadReg(uint16_t LCD_Reg)
 {
     /* Write 16-bit Index */
+    LCD_WriteIndex(LCD_Reg);
 
     /* Return 16-bit Reg using LCD_ReadData() */
-
-    /* TODO */
+    return LCD_ReadData();
 }
 
 /*******************************************************************************
@@ -271,14 +322,14 @@ inline uint16_t LCD_ReadReg(uint16_t LCD_Reg)
  *******************************************************************************/
 inline void LCD_WriteIndex(uint16_t index)
 {
-    SPI_CS_LOW;
+    SPI_CS_LCD_LOW;
 
     /* SPI write data */
     SPISendRecvByte(SPI_START | SPI_WR | SPI_INDEX);   /* Write : RS = 0, RW = 0  */
     SPISendRecvByte(0);
     SPISendRecvByte(index);
 
-    SPI_CS_HIGH;
+    SPI_CS_LCD_HIGH;
 }
 
 /*******************************************************************************
@@ -286,19 +337,19 @@ inline void LCD_WriteIndex(uint16_t index)
  * Description    : Send one byte then receive one byte of response
  * Input          : uint8_t: byte
  * Output         : None
- * Return         : Recieved value 
+ * Return         : Recieved value
  * Attention      : None
  *******************************************************************************/
-inline uint8_t SPISendRecvByte (uint8_t byte)
+inline uint8_t SPISendRecvByte(uint8_t byte)
 {
     /* Send byte of data */
+    SPI_transmitData(EUSCI_B3_BASE, byte);
 
     /* Wait as long as busy */ 
+    while(SPI_isBusy(EUSCI_B3_BASE));
 
     /* Return received value*/
-
-    /* TODO */
-
+    return SPI_receiveData(EUSCI_B3_BASE);
 }
 
 /*******************************************************************************
@@ -325,14 +376,14 @@ inline void LCD_Write_Data_Start(void)
 inline uint16_t LCD_ReadData()
 {
     uint16_t value;
-    SPI_CS_LOW;
+    SPI_CS_LCD_LOW;
 
     SPISendRecvByte(SPI_START | SPI_RD | SPI_DATA);   /* Read: RS = 1, RW = 1   */
     SPISendRecvByte(0);                               /* Dummy read 1           */
     value = (SPISendRecvByte(0) << 8);                /* Read D8..D15           */
     value |= SPISendRecvByte(0);                      /* Read D0..D7            */
 
-    SPI_CS_HIGH;
+    SPI_CS_LCD_HIGH;
     return value;
 }
 
@@ -348,11 +399,10 @@ inline uint16_t LCD_ReadData()
 inline void LCD_WriteReg(uint16_t LCD_Reg, uint16_t LCD_RegValue)
 {
     /* Write 16-bit Index */
+    LCD_WriteIndex(LCD_Reg);
 
     /* Write 16-bit Reg Data */
-
-    /* TODO */
-
+    LCD_WriteData(LCD_RegValue);
 }
 
 /*******************************************************************************
@@ -364,16 +414,13 @@ inline void LCD_WriteReg(uint16_t LCD_Reg, uint16_t LCD_RegValue)
  * Return         : None
  * Attention      : None
  *******************************************************************************/
-inline void LCD_SetCursor(uint16_t Xpos, uint16_t Ypos )
+inline void LCD_SetCursor(uint16_t Xpos, uint16_t Ypos)
 {
-    /* Should just be two LCD_WriteReg to appropriate registers */ 
-
-    /* Set horizonal GRAM coordinate (Ypos) */ 
+    /* Set horizonal GRAM coordinate (Ypos) */
+    LCD_WriteReg(GRAM_HORIZONTAL_ADDRESS_SET, Ypos); /* GRAM horizontal Address */
 
     /* Set vertical GRAM coordinate (Xpos) */
-
-    /* TODO */
-
+    LCD_WriteReg(GRAM_VERTICAL_ADDRESS_SET, Xpos); /* GRAM Vertical Address */
 }
 
 /*******************************************************************************
@@ -390,7 +437,7 @@ void LCD_Init(bool usingTP)
 
     if (usingTP)
     {
-        /* Configure low true interrupt on P4.0 for TP */ 
+        /* TODO - Configure low true interrupt on P4.0 for TP */
     }
 
     LCD_reset();
@@ -464,6 +511,8 @@ void LCD_Init(bool usingTP)
     Delay(50); /* delay 50 ms */
 
     LCD_Clear(LCD_BLACK);
+
+    LCD_Text(0, 0, "G8RTOS", LCD_RED);
 }
 
 /*******************************************************************************

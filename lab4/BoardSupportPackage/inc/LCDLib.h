@@ -26,9 +26,9 @@
 #define SPI_DATA    (0x02)     /* RS bit 1 within start byte         */
 #define SPI_INDEX   (0x00)     /* RS bit 0 within start byte         */
 
-/* CS LCD*/
-#define SPI_CS_LOW P10OUT &= ~BIT4
-#define SPI_CS_HIGH P10OUT |= BIT4
+/* CS LCD */
+#define SPI_CS_LCD_LOW P10OUT &= ~BIT4
+#define SPI_CS_LCD_HIGH P10OUT |= BIT4
 
 /* CS Touchpanel */
 #define SPI_CS_TP_LOW P10OUT &= ~BIT5
@@ -127,7 +127,7 @@ typedef struct Point {
  * Return         : None
  * Attention      : None
  *******************************************************************************/
-void LCD_DrawRectangle(int16_t xStart, int16_t xEnd, int16_t yStart, int16_t yEnd, uint16_t Color);
+void LCD_DrawRectangle(uint16_t xStart, uint16_t xEnd, uint16_t yStart, uint16_t yEnd, uint16_t Color);
 
 /******************************************************************************
 * Function Name  : PutChar
