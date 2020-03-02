@@ -109,7 +109,7 @@ void LCD_DrawRectangle(uint16_t xStart, uint16_t xEnd, uint16_t yStart, uint16_t
      * all degrees of freedom, verifying its validity. The coordinates may
      * never be less than 0, as they are unsigned integers. */
     if (xStart > xEnd || yStart > yEnd ||
-        yEnd >= MAX_SCREEN_X || xEnd >= MAX_SCREEN_X) return;
+        yEnd >= MAX_SCREEN_Y || xEnd >= MAX_SCREEN_X) return;
 
     /* Set window area for high-speed RAM write */
     LCD_WriteReg(HOR_ADDR_START_POS, yStart);     /* Horizontal GRAM Start Address */
