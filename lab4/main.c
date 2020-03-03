@@ -2,12 +2,14 @@
 
 /* ---------------------------------------- MAIN ---------------------------------------- */
 
+#define USING_TP true
+
 /**
  * main.c
  */
 void main(void)
 {
-    G8RTOS_Init(false);
+    G8RTOS_Init(USING_TP);
     while(1){}
 }
 

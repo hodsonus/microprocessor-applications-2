@@ -48,7 +48,7 @@ static void LCD_initSPI()
     EUSCI_B3->CTLW0 |= EUSCI_B_CTLW0_MST | // Master
                        EUSCI_B_CTLW0_MODE_0 | // 3-pin SPI
                        EUSCI_B_CTLW0_SYNC | // Synchronous (SPI, not UART) mode
-                       EUSCI_B_CTLW0_MSB | // TODO - MSB first?
+                       EUSCI_B_CTLW0_MSB | // MSB first
                        EUSCI_B_CTLW0_UCSSEL_2 | // SMCLK selected
                        EUSCI_B_CTLW0_CKPL; // High polarity for inactive state
     // 8 bit is selected by default (when 7bit is not present)
@@ -121,7 +121,7 @@ void LCD_DrawRectangle(uint16_t xStart, uint16_t xEnd, uint16_t yStart, uint16_t
     LCD_SetCursor(xStart, yStart);
 
     /* Set index to GRAM */
-    LCD_WriteIndex(GRAM);
+    LCD_WriteIndex(DATA_IN_GRAM);
 
     /* Send out data only to the entire area */
     SPI_CS_LCD_LOW;
@@ -226,7 +226,7 @@ void LCD_Clear(uint16_t Color)
     LCD_SetCursor(0, 0);
 
     /* Set write index to GRAM */
-    LCD_WriteIndex(GRAM);
+    LCD_WriteIndex(DATA_IN_GRAM);
 
     /* Start data transmission */
     SPI_CS_LCD_LOW;
@@ -256,7 +256,7 @@ void LCD_SetPoint(uint16_t Xpos, uint16_t Ypos, uint16_t color)
     LCD_SetCursor(Xpos, Ypos);
 
     /* Write color to GRAM reg */ 
-    LCD_WriteReg(GRAM, color);
+    LCD_WriteReg(DATA_IN_GRAM, color);
 }
 
 /*******************************************************************************
@@ -435,9 +435,32 @@ void LCD_Init(bool usingTP)
 {
     LCD_initSPI();
 
+    /* Configure low true interrupt on P4.0 for TP */
     if (usingTP)
     {
-        /* TODO - Configure low true interrupt on P4.0 for TP */
+        // Configure as I/O
+        P4->SEL0 &= ~BIT0;
+        P4->SEL1 &= ~BIT0;
+
+        // Configure as input pin
+        P4->DIR &= ~BIT0;
+
+        // Enable pull resistor on this pin
+        P4->REN |= BIT0;
+
+        // Pull up
+        P4->OUT |= BIT0;
+
+        // Configure interrupt to occur on high->low transition
+        P4->IES |= BIT0;
+
+        // Clear pending interrupt flags for this port
+        P4->IFG = 0;
+
+        // Enable interrupts for this pin
+        P4->IE |= BIT0;
+
+        NVIC_EnableIRQ(PORT4_IRQn);
     }
 
     LCD_reset();
@@ -523,14 +546,37 @@ void LCD_Init(bool usingTP)
  *******************************************************************************/
 Point TP_ReadXY()
 {
+    uint16_t x_temp, t_temp;
+
+    SPI_CS_TP_LOW;
+
     /* Read X coord. */ 
+    // Send the CHX byte (used for x coordinate retrieval)
+    SPISendRecvByte(CHX);
+    // Bits 11 -> 5 are grabbed on the first byte transfer (of a 12 bit transfer)
+    x_temp  = SPISendRecvByte(0) << 5;
+    // Bits 4 -> 0 are grabbed on the second (and last) byte transfer, right padded with 0
+    x_temp |= SPISendRecvByte(0) >> 3;
+
+    /* Read Y coord. */
+    SPISendRecvByte(CHY);
+    y_temp  = SPISendRecvByte(0) << 5;
+    y_temp |= SPISendRecvByte(0) >> 3;
+
+    SPI_CS_TP_HIGH;
     
-    /* Read Y coord. */ 
-    
+    Point p;
+
+    /* Convert the A-D conversion result (a 12 bit integer) to a value between
+     * 0 and 1 by dividing by 4096, the largest integer representable. Multiply
+     * this by the max screen size for either X or Y, you will get the position
+     *  of the touched point. */
+
+    p.x = x_temp/4096*MAX_SCREEN_X;
+    p.y = y_temp/4096*MAX_SCREEN_Y;
+
     /* Return point  */ 
-
-    /* TODO */
+    return p;
 }
-
 /************************************  Public Functions  *******************************************/
 
