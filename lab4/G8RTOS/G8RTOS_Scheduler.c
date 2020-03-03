@@ -87,7 +87,11 @@ static uint16_t IDCounter;
 static void InitSysTick()
 {
     // initialize SysTick for a 1 ms system time tick
-    SysTick_Config(ClockSys_GetSysFreq() / 10^3);
+    SysTick->LOAD = ClockSys_GetSysFreq() / 1000;
+    SysTick->VAL = 0;
+    SysTick->CTRL |= SysTick_CTRL_CLKSOURCE_Msk |
+                     SysTick_CTRL_TICKINT_Msk |
+                     SysTick_CTRL_ENABLE_Msk;
 }
 
 /*
