@@ -17,10 +17,13 @@ int16_t y_accel;
 /* Aperiodic event - sets a flag when the screen is tapped. */
 void LCDTapHandler(void)
 {
-    LCDTapped = true;
-
-    if(P4->IFG & BIT0)
+    // If the interrupt flag for BIT0 is set
+    if (P4->IFG & BIT0)
     {
+        // Set the LCD flag
+        LCDTapped = true;
+
+        // And clear the flag
         P4->IFG &= ~BIT0;
     }
 }
@@ -30,32 +33,41 @@ void LCDTappedWorker(void)
 {
     while(1)
     {
+        // If the LCD flag is true
         if (LCDTapped)
         {
             // Retrieve the location at which the screen was tapped
             Point tap = TP_ReadXY();
 
-            // Determine if we are creating or destroying a ball
+            // Determine if we are destroying a ball
             int ballToKill = -1;
             for (int i = 0; i < MAX_BALLS; ++i)
             {
+                /* If the ith ball is dead, then we cannot possibly kill it,
+                 * so continue */
                 if (!balls[i].alive) continue;
 
-                uint16_t delta_x = balls[i].x_position - tap.x;
-                uint16_t delta_y = balls[i].y_position - tap.y;
+                /* Calculate the delta between the tap and the ball's
+                 * position */
+                uint32_t delta_x = balls[i].x_position - tap.x;
+                uint32_t delta_y = balls[i].y_position - tap.y;
 
-                int distance = square_root(delta_x*delta_x + delta_y*delta_y);
-
-                if (distance < TAP_DISTANCE_THRESHOLD)
+                /* Compare the distance between the points squared to the
+                 * threshold defined in the header. */
+                uint32_t distance_squared = delta_x*delta_x + delta_y*delta_y;
+                if (distance_squared < TAP_DISTANCE_THRESHOLD*TAP_DISTANCE_THRESHOLD)
                 {
+                    /* If the distance is within our threshold, assign
+                     * ballToKill and break. */
                     ballToKill = i;
                     break;
                 }
             }
 
+            // If a ball to kill was NOT found in the above loop
             if (ballToKill == -1)
             {
-                // Create ball at location tap
+                // Then create a ball at the location of the tap
 
                 // Write the location of the tap to the shared FIFO
                 G8RTOS_WriteFIFO(COORD_FIFO, tap.x << 16 | tap.y);
@@ -65,17 +77,22 @@ void LCDTappedWorker(void)
             }
             else
             {
+                // Else if we did find a ball to kill
+
                 // Erase the old ball from the screen
                 draw_ball(BACKGROUND_COLOR,
                           balls[ballToKill].x_position,
                           balls[ballToKill].y_position);
 
-                // Kill the ball thread
+                // Mark it as dead
+                balls[ballToKill].alive = false;
+
+                // And kill its respective thread
                 G8RTOS_KillThread(balls[ballToKill].thread_id);
             }
 
             /* Sleep to account for screen bouncing and then reset the flag so
-             * we can reenter. */
+             * we can later reenter. */
             G8RTOS_Sleep(500);
             LCDTapped = false;
         }
@@ -87,10 +104,23 @@ void ReadAccelerometer(void)
 {
     while(1)
     {
+        // Read the most up to date value from the accelerometer
         bmi160_read_accel_x(&x_accel);
         bmi160_read_accel_y(&y_accel);
 
-        G8RTOS_Sleep(30);
+        /* Scale the acceleration back to a number we can work with and flip
+         * it if necessary */
+        x_accel = x_accel/ACCELERATION_SCALER;
+        y_accel = -y_accel/ACCELERATION_SCALER;
+
+        // Cap out the acceleration at +/- MAX_ACCELERATION for x and y
+        if (x_accel >= MAX_ACCELERATION) x_accel = MAX_ACCELERATION;
+        else if (x_accel <= -MAX_ACCELERATION) x_accel = -MAX_ACCELERATION;
+        if (y_accel >= MAX_ACCELERATION) y_accel = MAX_ACCELERATION;
+        else if (y_accel <= -MAX_ACCELERATION) y_accel = -MAX_ACCELERATION;
+
+        // Sleep for 100ms
+        G8RTOS_Sleep(100);
     }
 }
 
@@ -101,7 +131,8 @@ void Ball(void)
     // Read FIFO to remove the most recently inserted point
     int32_t point = G8RTOS_ReadFIFO(COORD_FIFO);
 
-    // Finds a dead ball and makes it alive
+    /* Finds a dead ball to animate by iterating over the list of balls and
+     * picking the first one that is dead */
     int ball_to_animate = -1;
     for (int i = 0; i < MAX_BALLS; ++i)
     {
@@ -118,54 +149,54 @@ void Ball(void)
         G8RTOS_KillSelf();
     }
 
-    // Initialize coordinates accordingly from the point
+    // Initialize coordinate accordingly from the point retrieved from the FIFO
     balls[ball_to_animate].x_position = point >> 16;
     balls[ball_to_animate].y_position = point & 0xFFFF;
 
-    // TODO - initialize randomly
+    // TODO - Initialize x and y velocity randomly
     balls[ball_to_animate].x_velocity = 0;
     balls[ball_to_animate].y_velocity = 0;
 
+    // Initialize the ball as alive with the current thread id
     balls[ball_to_animate].alive = true;
-
     balls[ball_to_animate].thread_id = G8RTOS_GetThreadId();
 
+    // TODO - Set the color of the ball
     balls[ball_to_animate].color = LCD_RED;
 
     while(1)
     {
-        // Erase the old ball from the screen
+        // Erase the ball's previous frame from the screen
         draw_ball(BACKGROUND_COLOR,
                   balls[ball_to_animate].x_position,
                   balls[ball_to_animate].y_position);
 
-        int time_elapsed = 1;
+        // Update x velocity, capping at +/- MAX_VELOCITY
+        balls[ball_to_animate].x_velocity = balls[ball_to_animate].x_velocity + x_accel / TIME_ELAPSED;
+        if (balls[ball_to_animate].x_velocity <= -MAX_VELOCITY) balls[ball_to_animate].x_velocity = -MAX_VELOCITY;
+        else if (balls[ball_to_animate].x_velocity >= MAX_VELOCITY) balls[ball_to_animate].x_velocity = MAX_VELOCITY;
 
-        // Move position depending on velocity and acceleration
-        balls[ball_to_animate].x_velocity = balls[ball_to_animate].x_velocity + x_accel / time_elapsed;
-        balls[ball_to_animate].y_velocity = balls[ball_to_animate].y_velocity + y_accel / time_elapsed;
+        // Update y velocity, capping at +/- MAX_VELOCITY
+        balls[ball_to_animate].y_velocity = balls[ball_to_animate].y_velocity + y_accel / TIME_ELAPSED;
+        if (balls[ball_to_animate].y_velocity <= -MAX_VELOCITY) balls[ball_to_animate].y_velocity = -MAX_VELOCITY;
+        else if (balls[ball_to_animate].y_velocity >= MAX_VELOCITY) balls[ball_to_animate].y_velocity = MAX_VELOCITY;
 
-//        balls[ball_to_animate].x_position = balls[ball_to_animate].x_position + balls[ball_to_animate].x_velocity / time_elapsed;
-//        balls[ball_to_animate].y_position = balls[ball_to_animate].y_position + balls[ball_to_animate].y_velocity / time_elapsed;
+        // Update the x position using the position and the velocity, wrapping around back to 0 if we are past the maximum.
+        balls[ball_to_animate].x_position = balls[ball_to_animate].x_position + balls[ball_to_animate].x_velocity / TIME_ELAPSED;
+        if (balls[ball_to_animate].x_position >= MAX_SCREEN_X) balls[ball_to_animate].x_position = 0;
+        else if (balls[ball_to_animate].x_position <= 0) balls[ball_to_animate].x_position = MAX_SCREEN_X;
 
-        balls[ball_to_animate].x_position = balls[ball_to_animate].x_position + 10;
-        balls[ball_to_animate].y_position = balls[ball_to_animate].y_position + 10;
+        // Update the y position using the position and the velocity, wrapping around back to 0 if we are past the maximum.
+        balls[ball_to_animate].y_position = balls[ball_to_animate].y_position + balls[ball_to_animate].y_velocity / TIME_ELAPSED;
+        if (balls[ball_to_animate].y_position >= MAX_SCREEN_Y) balls[ball_to_animate].y_position = 0;
+        else if (balls[ball_to_animate].y_position <= 0) balls[ball_to_animate].y_position = MAX_SCREEN_Y;
 
-        if (balls[ball_to_animate].x_position >= MAX_SCREEN_X)
-        {
-            balls[ball_to_animate].x_position = 0;
-        }
-
-        if (balls[ball_to_animate].y_position >= MAX_SCREEN_Y)
-        {
-            balls[ball_to_animate].y_position = 0;
-        }
-
-        // Update ball on screen
+        // Draw the ball's new frame on the screen
         draw_ball(balls[ball_to_animate].color,
                   balls[ball_to_animate].x_position,
                   balls[ball_to_animate].y_position);
 
+        // Sleep for 30ms
         G8RTOS_Sleep(30);
     }
 }
@@ -180,18 +211,4 @@ void Idle(void)
 void draw_ball(uint16_t color, uint16_t x_start, uint16_t y_start)
 {
     LCD_DrawRectangle(x_start, x_start+BALL_SIZE, y_start, y_start+BALL_SIZE, color);
-}
-
-/* Helper function used to calculate the distance between a ball and a tap. */
-int square_root(int n)
-{
-    int xk, xkp1 = n;
-
-    do
-    {
-        xk = xkp1;
-        xkp1 = (xk + (n / xk)) / 2;
-    } while (abs(xkp1 - xk) >= 1);
-
-    return xkp1;
 }

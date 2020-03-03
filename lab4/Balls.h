@@ -18,11 +18,15 @@
 #define BALL_THREAD_PRIORITY 50
 #define ACCEL_THREAD_PRIORITY 50
 #define WORKER_PRIORITY 50
-#define BALL_SIZE 10
+#define BALL_SIZE 2
+#define MAX_VELOCITY 50
+#define MAX_ACCELERATION 50
+#define ACCELERATION_SCALER 200
+#define TIME_ELAPSED 4
 
 typedef struct ball {
-    uint16_t x_position;
-    uint16_t y_position;
+    int32_t x_position;
+    int32_t y_position;
     int32_t x_velocity;
     int32_t y_velocity;
     bool alive;
@@ -48,8 +52,5 @@ void Idle(void);
 
 /* Helper function used to draw and erase a ball from the screen. */
 void draw_ball(uint16_t color, uint16_t x_start, uint16_t y_start);
-
-/* Helper function used to calculate the distance between a ball and a tap. */
-int square_root(int n);
 
 #endif /* BALLS_H_ */
