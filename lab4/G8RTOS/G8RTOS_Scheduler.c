@@ -206,15 +206,16 @@ G8RTOS_Scheduler_Error G8RTOS_Launch()
     if (NumberOfThreads == 0) return NO_THREADS_SCHEDULED;
 
     // Set CurrentlyRunningThread to be the thread with the highest priority
-    int max = 0;
-    for (int i = 1; i < NumberOfThreads; ++i)
+    int min = -1;
+    for (int i = 0; i < MAX_THREADS; ++i)
     {
-        if (threadControlBlocks[i].priority > threadControlBlocks[max].priority)
+        if (threadControlBlocks[i].alive && (min == -1 || threadControlBlocks[i].priority < threadControlBlocks[min].priority))
         {
-            max = i;
+            min = i;
         }
     }
-    CurrentlyRunningThread = &threadControlBlocks[max];
+    if (min == -1) return UNKNOWN_FAILURE;
+    CurrentlyRunningThread = &threadControlBlocks[min];
 
     // Initialize SysTick
     InitSysTick();
@@ -286,15 +287,23 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t prior
         /* The old logic arranged pointers in the exact order they were
          * allocated in the array. This is no longer possible with dynamic
          * thread deletion and allocation, so we now insert the new thread
-         * immediately after the currently running thread. */
+         * immediately after an arbitrary thread that is alive. */
 
-        // Arrange the new TCB's pointers to look as though it came after CRT
-        threadControlBlocks[tcbToInitialize].prev = CurrentlyRunningThread;
-        threadControlBlocks[tcbToInitialize].next = CurrentlyRunningThread->next;
+        for (int i = 0; i < MAX_THREADS; ++i)
+        {
+            if (threadControlBlocks[i].alive)
+            {
+                // Arrange the new TCB's pointers to look as though it came after the alive thread
+                threadControlBlocks[tcbToInitialize].prev = &threadControlBlocks[i];
+                threadControlBlocks[tcbToInitialize].next = threadControlBlocks[i].next;
 
-        // Arrange pointers in the other alive threads to point to the new TCB
-        CurrentlyRunningThread->next = &threadControlBlocks[tcbToInitialize];
-        threadControlBlocks[tcbToInitialize].next->prev = &threadControlBlocks[tcbToInitialize];
+                // Arrange pointers in the other alive threads to point to the new TCB
+                threadControlBlocks[i].next = &threadControlBlocks[tcbToInitialize];
+                threadControlBlocks[tcbToInitialize].next->prev = &threadControlBlocks[tcbToInitialize];
+
+                break;
+            }
+        }
     }
 
     // Sets stack tcb stack pointer to top of thread stack
@@ -326,7 +335,7 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t prior
     ++NumberOfThreads;
 
     EndCriticalSection(IBit_State);
-    return SCHED_NO_ERROR;
+    return SCHEDULER_NO_ERROR;
 }
 
 /*
@@ -365,7 +374,7 @@ G8RTOS_Scheduler_Error G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint3
 
     ++NumberOfPThreads;
 
-    return SCHED_NO_ERROR;
+    return SCHEDULER_NO_ERROR;
 }
 
 /*
@@ -418,9 +427,9 @@ G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId)
 
     // Search for thread with the same threadId
     int thread_to_kill = -1;
-    for (int i = 0; i < NumberOfThreads; ++i)
+    for (int i = 0; i < MAX_THREADS; ++i)
     {
-        if (threadControlBlocks[i].thread_id == threadId)
+        if (threadControlBlocks[i].alive && threadControlBlocks[i].thread_id == threadId)
         {
             thread_to_kill = i;
             break;
@@ -453,7 +462,7 @@ G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId)
         G8RTOS_Yield();
     }
 
-    return SCHED_NO_ERROR;
+    return SCHEDULER_NO_ERROR;
 }
 
 /*
