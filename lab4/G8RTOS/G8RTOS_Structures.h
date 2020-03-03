@@ -8,8 +8,8 @@
 #ifndef G8RTOS_STRUCTURES_H_
 #define G8RTOS_STRUCTURES_H_
 
-#include <G8RTOS/G8RTOS_Semaphores.h>
 #include <stdbool.h>
+#include "G8RTOS_Semaphores.h"
 
 
 /*********************************************** Typedefs ******************************************************************************/

@@ -5,7 +5,8 @@
 #ifndef G8RTOS_SCHEDULER_H_
 #define G8RTOS_SCHEDULER_H_
 
-#include <G8RTOS/G8RTOS_Structures.h>
+#include "G8RTOS_Structures.h"
+#include "msp.h"
 
 /*********************************************** Sizes and Limits *********************************************************************/
 #define MAX_THREADS 6
@@ -62,10 +63,10 @@ G8RTOS_Scheduler_Error G8RTOS_Launch();
  * 	- Initializes the thread control block for the provided thread
  * 	- Initializes the stack for the provided thread
  * 	- Sets up the next and previous tcb pointers in a round robin fashion
- * Param "threadToAdd": Void-Void Function to add as preemptable main thread
- * Param "priority": Priority of the thread that is being added. 0 is the
+ * Param threadToAdd: Void-Void Function to add as preemptable main thread
+ * Param priority: Priority of the thread that is being added. 0 is the
  *                   highest and 255 is the lowest priority.
- * Param "thread_name": the name of the thread, helpful when debugging.
+ * Param thread_name: the name of the thread, helpful when debugging.
  * Returns: Error code for adding threads
  */
 G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t priority, char* thread_name);
@@ -74,7 +75,7 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t prior
  * Adds periodic threads to G8RTOS Scheduler
  * Function will initialize a periodic event struct to represent event.
  * The struct will be added to a linked list of periodic events
- * Param Pthread To Add: void-void function for P thread handler
+ * Param PthreadToAdd: void-void function for P thread handler
  * Param period: period of P thread to add
  * Returns: Error code for adding threads
  */
@@ -82,29 +83,36 @@ G8RTOS_Scheduler_Error G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint3
 
 /*
  * Puts the current thread into a sleep state.
- * param duration: Duration of sleep time in ms
+ * Param duration: Duration of sleep time in ms
  */
 void G8RTOS_Sleep(uint32_t duration);
 
 /*
- * Cooperatively yields CPU
+ * Yields the rest of the CRT's time if used cooperatively. Can also be
+ * used by the OS to force context switches when threads are killed.
  */
 void G8RTOS_Yield();
 
 /*
- * Returns the currently running thread's id
+ * Returns the CRT's thread id.
  */
 threadId_t G8RTOS_GetThreadId();
 
 /*
- * Kill the thread with id "threadId"
+ * Kill the thread with id threadId.
  */
 G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId);
 
 /*
- * Kill the running thread
+ * Kill the CRT.
  */
 G8RTOS_Scheduler_Error G8RTOS_KillSelf();
+
+/*
+ * Add an aperiodic event thread (essentially an interrupt routine) by
+ * initializing appropriate NVIC registers.
+ */
+G8RTOS_Scheduler_Error G8RTOS_AddAPeriodicEvent(void (*AthreadToAdd)(void), uint8_t priority, IRQn_Type IRQn);
 
 /*********************************************** Public Functions *********************************************************************/
 

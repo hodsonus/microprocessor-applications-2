@@ -4,10 +4,12 @@
  *  Created on: Feb 29, 2020
  *      Author: John Hodson
  */
+
 #include <stdint.h>
 #include "msp.h"
 #include "G8RTOS_IPC.h"
 #include "G8RTOS_Semaphores.h"
+
 
 /*********************************************** Defines ******************************************************************************/
 

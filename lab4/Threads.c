@@ -6,8 +6,8 @@
  */
 
 #include <stdint.h>
-#include <G8RTOS/G8RTOS.h>
-#include <BSP.h>
+#include "G8RTOS/G8RTOS.h"
+#include "BSP.h"
 #include "Threads.h"
 
 #define NUM_READINGS 10

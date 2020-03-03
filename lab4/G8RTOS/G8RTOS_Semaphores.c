@@ -4,11 +4,9 @@
 
 /*********************************************** Dependencies and Externs *************************************************************/
 
-#include <G8RTOS/G8RTOS_Scheduler.h>
-#include <G8RTOS/G8RTOS_CriticalSection.h>
-#include <G8RTOS/G8RTOS_Semaphores.h>
-
-#include <stdint.h>
+#include "G8RTOS_Scheduler.h"
+#include "G8RTOS_CriticalSection.h"
+#include "G8RTOS_Semaphores.h"
 #include "msp.h"
 
 /*********************************************** Dependencies and Externs *************************************************************/
@@ -20,7 +18,6 @@
  * Initializes a semaphore to a given value
  * Param "s": Pointer to semaphore
  * Param "value": Value to initialize semaphore to
- * THIS IS A CRITICAL SECTION
  */
 void G8RTOS_InitSemaphore(semaphore_t* s, int32_t value)
 {
@@ -36,7 +33,6 @@ void G8RTOS_InitSemaphore(semaphore_t* s, int32_t value)
  *  - Decrements semaphore
  *  - Blocks thread is sempahore is unavalible
  * Param "s": Pointer to semaphore to wait on
- * THIS IS A CRITICAL SECTION
  */
 void G8RTOS_WaitSemaphore(semaphore_t* s)
 {
@@ -67,7 +63,6 @@ void G8RTOS_WaitSemaphore(semaphore_t* s)
  *  - Increments the semaphore value by 1
  *  - Unblocks any threads waiting on that semaphore
  * Param "s": Pointer to semaphore to be signaled
- * THIS IS A CRITICAL SECTION
  */
 void G8RTOS_SignalSemaphore(semaphore_t* s)
 {

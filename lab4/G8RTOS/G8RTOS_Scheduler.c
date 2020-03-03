@@ -2,14 +2,15 @@
  * G8RTOS_Scheduler.c
  */
 
-/*********************************************** Dependencies and Externs *************************************************************/
-
-#include <G8RTOS/G8RTOS_Scheduler.h>
-#include <G8RTOS/G8RTOS_CriticalSection.h>
 #include <stdint.h>
 #include <string.h>
 #include "msp.h"
 #include "BSP.h"
+#include "G8RTOS_Scheduler.h"
+#include "G8RTOS_CriticalSection.h"
+
+
+/*********************************************** Dependencies and Externs *************************************************************/
 
 /*
  * G8RTOS_Start exists in asm
@@ -182,11 +183,17 @@ uint32_t SystemTime;
  */
 void G8RTOS_Init(bool LCD_usingTP)
 {
-    // Initialize system time to zero
+    // Initialize system time, number of threads, and ID counter to zero
     SystemTime = 0;
-
-    // Set the number of threads to zero
     NumberOfThreads = 0;
+    NumberOfPThreads = 0;
+    IDCounter = 0;
+
+    // Relocate the VTOR table to SRAM
+    uint32_t newVTORTable = 0x20000000;
+    // 57 interrupt vectors to copy
+    memcpy((uint32_t *)newVTORTable, (uint32_t *)SCB->VTOR, 57*4);
+    SCB->VTOR = newVTORTable;
 
     // Initialize all hardware on the board
     BSP_InitBoard(LCD_usingTP);
@@ -232,17 +239,16 @@ G8RTOS_Scheduler_Error G8RTOS_Launch()
     return UNKNOWN_FAILURE;
 }
 
-
 /*
  * Adds threads to G8RTOS Scheduler
  *  - Checks if there are still available threads to insert to scheduler
  *  - Initializes the thread control block for the provided thread
  *  - Initializes the stack for the provided thread
  *  - Sets up the next and previous tcb pointers in a round robin fashion
- * Param "threadToAdd": Void-Void Function to add as preemptable main thread
- * Param "priority": Priority of the thread that is being added. 0 is the
+ * Param threadToAdd: Void-Void Function to add as preemptable main thread
+ * Param priority: Priority of the thread that is being added. 0 is the
  *                   highest and 255 is the lowest priority.
- * Param "thread_name": the name of the thread, helpful when debugging.
+ * Param thread_name: the name of the thread, helpful when debugging.
  * Returns: Error code for adding threads
  */
 G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t priority, char* thread_name)
@@ -342,14 +348,20 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t prior
  * Adds periodic threads to G8RTOS Scheduler
  * Function will initialize a periodic event struct to represent event.
  * The struct will be added to a linked list of periodic events
- * Param Pthread To Add: void-void function for P thread handler
+ * Param PthreadToAdd: void-void function for P thread handler
  * Param period: period of P thread to add
  * Returns: Error code for adding threads
  */
 G8RTOS_Scheduler_Error G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period)
 {
+    int32_t IBit_State = StartCriticalSection();
+
     // Checks if there are still available threads to insert to scheduler
-    if (NumberOfPThreads >= MAX_PTHREADS) return PTHREAD_LIMIT_REACHED;
+    if (NumberOfPThreads >= MAX_PTHREADS)
+    {
+        EndCriticalSection(IBit_State);
+        return PTHREAD_LIMIT_REACHED;
+    }
 
     if (NumberOfPThreads == 0)
     {
@@ -374,12 +386,13 @@ G8RTOS_Scheduler_Error G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint3
 
     ++NumberOfPThreads;
 
+    EndCriticalSection(IBit_State);
     return SCHEDULER_NO_ERROR;
 }
 
 /*
  * Puts the current thread into a sleep state.
- *  param durationMS: Duration of sleep time in ms
+ * param durationMS: Duration of sleep time in ms
  */
 void G8RTOS_Sleep(uint32_t duration)
 {
@@ -394,7 +407,8 @@ void G8RTOS_Sleep(uint32_t duration)
 }
 
 /*
- * Cooperatively yields CPU
+ * Yields the rest of the CRT's time if used cooperatively. Can also be
+ * used by the OS to force context switches when threads are killed.
  */
 void G8RTOS_Yield()
 {
@@ -403,7 +417,7 @@ void G8RTOS_Yield()
 }
 
 /*
- * Returns the currently running thread's id
+ * Returns the CRT's thread id.
  */
 threadId_t G8RTOS_GetThreadId()
 {
@@ -411,7 +425,7 @@ threadId_t G8RTOS_GetThreadId()
 }
 
 /*
- * Kill the thread with id "threadId"
+ * Kill the thread with id threadId.
  */
 G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId)
 {
@@ -466,11 +480,44 @@ G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId)
 }
 
 /*
- * Kill the running thread
+ * Kill the CRT.
  */
 G8RTOS_Scheduler_Error G8RTOS_KillSelf()
 {
     return G8RTOS_KillThread(CurrentlyRunningThread->thread_id);
+}
+
+/*
+ * Add an aperiodic event thread (essentially an interrupt routine) by
+ * initializing appropriate NVIC registers.
+ */
+G8RTOS_Scheduler_Error G8RTOS_AddAPeriodicEvent(void (*AthreadToAdd)(void), uint8_t priority, IRQn_Type IRQn)
+{
+    int32_t IBit_State = StartCriticalSection();
+
+    /* Verify the IRQn is not less than the last exception (PSS_IRQn) or
+     * greater than the last acceptable user IRQn (PORT6_IRQn). */
+    if (IRQn < PSS_IRQn || IRQn > PORT6_IRQn)
+    {
+        EndCriticalSection(IBit_State);
+        return IRQn_INVALID;
+    }
+
+    /* Verify priority is not greater than 6 (the greatest user priority
+     * number). */
+    if (priority > 6)
+    {
+        EndCriticalSection(IBit_State);
+        return HWI_PRIORITY_INVALID;
+    }
+
+    // Initialize the NVIC registers
+    __NVIC_SetVector(IRQn, (uint32_t)AthreadToAdd);
+    __NVIC_SetPriority(IRQn, (uint32_t)priority);
+    NVIC_EnableIRQ(IRQn);
+
+    EndCriticalSection(IBit_State);
+    return SCHEDULER_NO_ERROR;
 }
 
 /*********************************************** Public Functions *********************************************************************/
