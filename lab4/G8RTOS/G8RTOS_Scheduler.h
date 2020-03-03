@@ -10,8 +10,8 @@
 /*********************************************** Sizes and Limits *********************************************************************/
 #define MAX_THREADS 6
 #define MAX_PTHREADS 6
-#define STACKSIZE 1024
-#define OSINT_PRIORITY 7
+#define STACK_SIZE 1024
+#define PENDSV_PRIORITY 7
 #define SYSTICK_PRIORITY 3
 /*********************************************** Sizes and Limits *********************************************************************/
 
@@ -19,11 +19,16 @@
 /*********************************************** Enums ********************************************************************************/
 typedef enum G8RTOS_Scheduler_Error
 {
-    OK_SCHED = 0,
-    ERR_MAX_THREADS_SCHEDULED = -1,
-    ERR_LAUNCHED_NO_THREADS = -2,
-    ERR_MAX_PTHREADS_SCHEDULED = -3,
-    ERR_UNKN_FAILURE = -4,
+    SCHED_NO_ERROR = 0,
+    THREAD_LIMIT_REACHED = -1,
+    NO_THREADS_SCHEDULED = -2,
+    THREADS_INCORRECTLY_ALIVE = -3,
+    THREAD_DOES_NOT_EXIST = -4,
+    CANNOT_KILL_LAST_THREAD = -5,
+    IRQn_INVALID = -6,
+    HWI_PRIORITY_INVALID = -7,
+    PTHREAD_LIMIT_REACHED = -8,
+    UNKNOWN_FAILURE = -9,
 } G8RTOS_Scheduler_Error;
 /*********************************************** Enums ********************************************************************************/
 
@@ -58,9 +63,12 @@ G8RTOS_Scheduler_Error G8RTOS_Launch();
  * 	- Initializes the stack for the provided thread
  * 	- Sets up the next and previous tcb pointers in a round robin fashion
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
+ * Param "priority": Priority of the thread that is being added. 0 is the
+ *                   highest and 255 is the lowest priority.
+ * Param "thread_name": the name of the thread, helpful when debugging.
  * Returns: Error code for adding threads
  */
-G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t priority);
+G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t priority, char* thread_name);
 
 /*
  * Adds periodic threads to G8RTOS Scheduler
@@ -82,6 +90,21 @@ void G8RTOS_Sleep(uint32_t duration);
  * Cooperatively yields CPU
  */
 void G8RTOS_Yield();
+
+/*
+ * Returns the currently running thread's id
+ */
+threadId_t G8RTOS_GetThreadId();
+
+/*
+ * Kill the thread with id "threadId"
+ */
+G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId);
+
+/*
+ * Kill the running thread
+ */
+G8RTOS_Scheduler_Error G8RTOS_KillSelf();
 
 /*********************************************** Public Functions *********************************************************************/
 

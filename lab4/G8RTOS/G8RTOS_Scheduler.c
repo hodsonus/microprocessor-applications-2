@@ -7,6 +7,7 @@
 #include <G8RTOS/G8RTOS_Scheduler.h>
 #include <G8RTOS/G8RTOS_CriticalSection.h>
 #include <stdint.h>
+#include <string.h>
 #include "msp.h"
 #include "BSP.h"
 
@@ -46,7 +47,7 @@ static tcb_t threadControlBlocks[MAX_THREADS];
 /* Thread Stacks
  *	- An array of arrays that will act as individual stacks for each thread
  */
-static int32_t threadStacks[MAX_THREADS][STACKSIZE];
+static int32_t threadStacks[MAX_THREADS][STACK_SIZE];
 
 /* Periodic Event Threads
  * - An array of periodic events to hold pertinent information for each thread
@@ -67,6 +68,11 @@ static uint32_t NumberOfThreads;
  * Current Number of Periodic Threads currently in the scheduler
  */
 static uint32_t NumberOfPThreads;
+
+/*
+ * Counter used to generate unique thread IDs
+ */
+static uint16_t IDCounter;
 
 /*********************************************** Private Variables ********************************************************************/
 
@@ -189,7 +195,7 @@ void G8RTOS_Init(bool LCD_usingTP)
 
 /*
  * Starts G8RTOS Scheduler
- * 	- Initializes the Systick
+ * 	- Initializes the SysTick
  * 	- Sets the priority of the SysTick and the PendSV interrupts
  * 	- Sets context to first thread to run (the one with the highest priority)
  * 	- Calls G8RTOS Start to initiate the first context switch and begin exec.
@@ -197,7 +203,7 @@ void G8RTOS_Init(bool LCD_usingTP)
  */
 G8RTOS_Scheduler_Error G8RTOS_Launch()
 {
-    if (NumberOfThreads == 0) return ERR_LAUNCHED_NO_THREADS;
+    if (NumberOfThreads == 0) return NO_THREADS_SCHEDULED;
 
     // Set CurrentlyRunningThread to be the thread with the highest priority
     int max = 0;
@@ -214,7 +220,7 @@ G8RTOS_Scheduler_Error G8RTOS_Launch()
     InitSysTick();
 
     // Set the priority of PendSV to the OS's priority (traditionally the lowest possible)
-    __NVIC_SetPriority(PendSV_IRQn, OSINT_PRIORITY);
+    __NVIC_SetPriority(PendSV_IRQn, PENDSV_PRIORITY);
 
     // TODO - should SysTick be the same priority as PendSV?
     __NVIC_SetPriority(SysTick_IRQn, SYSTICK_PRIORITY);
@@ -222,74 +228,105 @@ G8RTOS_Scheduler_Error G8RTOS_Launch()
     // Call G8RTOS_Start
     G8RTOS_Start();
 
-    return ERR_UNKN_FAILURE;
+    return UNKNOWN_FAILURE;
 }
 
 
 /*
  * Adds threads to G8RTOS Scheduler
- * 	- Checks if there are still available threads to insert to scheduler
- * 	- Initializes the thread control block for the provided thread
- * 	- Initializes the stack for the provided thread to hold a "fake context"
- * 	- Sets stack tcb stack pointer to top of thread stack
- * 	- Sets up the next and previous tcb pointers in a round robin fashion
+ *  - Checks if there are still available threads to insert to scheduler
+ *  - Initializes the thread control block for the provided thread
+ *  - Initializes the stack for the provided thread
+ *  - Sets up the next and previous tcb pointers in a round robin fashion
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
  * Param "priority": Priority of the thread that is being added. 0 is the
  *                   highest and 255 is the lowest priority.
+ * Param "thread_name": the name of the thread, helpful when debugging.
  * Returns: Error code for adding threads
  */
-G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t priority)
+G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t priority, char* thread_name)
 {
-    // Checks if there are still available threads to insert to scheduler
-    if (NumberOfThreads >= MAX_THREADS) return ERR_MAX_THREADS_SCHEDULED;
+    int32_t IBit_State = StartCriticalSection();
 
-    // Initializes the thread control block for the provided thread
-    // Sets up the next and previous tcb pointers in a round robin fashion
-    // The pointers below are arranged the same as threadControlBlocks array
-    // NumberOfThreads points to the new thread location
+    // Checks if there are still available threads to insert to scheduler
+    if (NumberOfThreads >= MAX_THREADS)
+    {
+        EndCriticalSection(IBit_State);
+        return THREAD_LIMIT_REACHED;
+    }
+
+
+    // tcbToInitialize will be the first TCB not alive
+    int tcbToInitialize = -1;
+    for (int i = 0; i < MAX_THREADS; ++i)
+    {
+        if (!threadControlBlocks[i].alive)
+        {
+            tcbToInitialize = i;
+            break;
+        }
+    }
+
+    // If there are no threads that are dead
+    if (tcbToInitialize == -1)
+    {
+        EndCriticalSection(IBit_State);
+        return THREADS_INCORRECTLY_ALIVE;
+    }
+
+    // Sets up the next and previous pointers
     if (NumberOfThreads == 0)
     {
         // If this is the first thread, point it to itself
-        threadControlBlocks[NumberOfThreads].prev = &threadControlBlocks[NumberOfThreads];
-        threadControlBlocks[NumberOfThreads].next = &threadControlBlocks[NumberOfThreads];
+        threadControlBlocks[tcbToInitialize].prev = &threadControlBlocks[tcbToInitialize];
+        threadControlBlocks[tcbToInitialize].next = &threadControlBlocks[tcbToInitialize];
     }
     else
     {
-        // Insert the new thread immediately after the most recently inserted thread
-        threadControlBlocks[NumberOfThreads].prev = &threadControlBlocks[NumberOfThreads-1];
-        threadControlBlocks[NumberOfThreads-1].next = &threadControlBlocks[NumberOfThreads];
+        /* The old logic arranged pointers in the exact order they were
+         * allocated in the array. This is no longer possible with dynamic
+         * thread deletion and allocation, so we now insert the new thread
+         * immediately after the currently running thread. */
 
-        // Point the ends towards each other
-        threadControlBlocks[NumberOfThreads].next = &threadControlBlocks[0];
-        threadControlBlocks[0].prev = &threadControlBlocks[NumberOfThreads];
+        // Arrange the new TCB's pointers to look as though it came after CRT
+        threadControlBlocks[tcbToInitialize].prev = CurrentlyRunningThread;
+        threadControlBlocks[tcbToInitialize].next = CurrentlyRunningThread->next;
+
+        // Arrange pointers in the other alive threads to point to the new TCB
+        CurrentlyRunningThread->next = &threadControlBlocks[tcbToInitialize];
+        threadControlBlocks[tcbToInitialize].next->prev = &threadControlBlocks[tcbToInitialize];
     }
 
     // Sets stack tcb stack pointer to top of thread stack
-    threadControlBlocks[NumberOfThreads].sp = &threadStacks[NumberOfThreads][STACKSIZE-16];
+    threadControlBlocks[tcbToInitialize].sp = &threadStacks[tcbToInitialize][STACK_SIZE-16];
 
     // Initializes the stack for the provided thread to hold a "fake context"
-    threadStacks[NumberOfThreads][STACKSIZE-1]  = THUMBBIT; // PSR
-    threadStacks[NumberOfThreads][STACKSIZE-2]  = (int32_t)threadToAdd; // R15 (PC)
-    threadStacks[NumberOfThreads][STACKSIZE-3]  = ZERO; // R14 (LR)
-    threadStacks[NumberOfThreads][STACKSIZE-4]  = ZERO; // R12
-    threadStacks[NumberOfThreads][STACKSIZE-5]  = ZERO; // R3
-    threadStacks[NumberOfThreads][STACKSIZE-6]  = ZERO; // R2
-    threadStacks[NumberOfThreads][STACKSIZE-7]  = ZERO; // R1
-    threadStacks[NumberOfThreads][STACKSIZE-8]  = ZERO; // R0
-    threadStacks[NumberOfThreads][STACKSIZE-9]  = ZERO; // R11
-    threadStacks[NumberOfThreads][STACKSIZE-10] = ZERO; // R10
-    threadStacks[NumberOfThreads][STACKSIZE-11] = ZERO; // R9
-    threadStacks[NumberOfThreads][STACKSIZE-12] = ZERO; // R8
-    threadStacks[NumberOfThreads][STACKSIZE-13] = ZERO; // R7
-    threadStacks[NumberOfThreads][STACKSIZE-14] = ZERO; // R6
-    threadStacks[NumberOfThreads][STACKSIZE-15] = ZERO; // R5
-    threadStacks[NumberOfThreads][STACKSIZE-16] = ZERO; // R4
+    threadStacks[tcbToInitialize][STACK_SIZE-1]  = THUMBBIT; // PSR
+    threadStacks[tcbToInitialize][STACK_SIZE-2]  = (int32_t)threadToAdd; // R15 (PC)
+    threadStacks[tcbToInitialize][STACK_SIZE-3]  = ZERO; // R14 (LR)
+    threadStacks[tcbToInitialize][STACK_SIZE-4]  = ZERO; // R12
+    threadStacks[tcbToInitialize][STACK_SIZE-5]  = ZERO; // R3
+    threadStacks[tcbToInitialize][STACK_SIZE-6]  = ZERO; // R2
+    threadStacks[tcbToInitialize][STACK_SIZE-7]  = ZERO; // R1
+    threadStacks[tcbToInitialize][STACK_SIZE-8]  = ZERO; // R0
+    threadStacks[tcbToInitialize][STACK_SIZE-9]  = ZERO; // R11
+    threadStacks[tcbToInitialize][STACK_SIZE-10] = ZERO; // R10
+    threadStacks[tcbToInitialize][STACK_SIZE-11] = ZERO; // R9
+    threadStacks[tcbToInitialize][STACK_SIZE-12] = ZERO; // R8
+    threadStacks[tcbToInitialize][STACK_SIZE-13] = ZERO; // R7
+    threadStacks[tcbToInitialize][STACK_SIZE-14] = ZERO; // R6
+    threadStacks[tcbToInitialize][STACK_SIZE-15] = ZERO; // R5
+    threadStacks[tcbToInitialize][STACK_SIZE-16] = ZERO; // R4
 
-    threadControlBlocks[NumberOfThreads].priority = priority;
+    threadControlBlocks[tcbToInitialize].priority = priority;
+    threadControlBlocks[tcbToInitialize].alive = true;
+    threadControlBlocks[tcbToInitialize].thread_id = ((IDCounter++) << 16) | tcbToInitialize;
+    strcpy(threadControlBlocks[tcbToInitialize].thread_name, thread_name);
 
-    NumberOfThreads++;
+    ++NumberOfThreads;
 
-    return OK_SCHED;
+    EndCriticalSection(IBit_State);
+    return SCHED_NO_ERROR;
 }
 
 /*
@@ -303,7 +340,7 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t prior
 G8RTOS_Scheduler_Error G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint32_t period)
 {
     // Checks if there are still available threads to insert to scheduler
-    if (NumberOfPThreads >= MAX_PTHREADS) return ERR_MAX_PTHREADS_SCHEDULED;
+    if (NumberOfPThreads >= MAX_PTHREADS) return PTHREAD_LIMIT_REACHED;
 
     if (NumberOfPThreads == 0)
     {
@@ -326,9 +363,9 @@ G8RTOS_Scheduler_Error G8RTOS_AddPeriodicEvent(void (*PthreadToAdd)(void), uint3
     periodicThreadControlBlocks[NumberOfPThreads].exec_time = SystemTime + period;
     periodicThreadControlBlocks[NumberOfPThreads].period = period;
 
-    NumberOfPThreads++;
+    ++NumberOfPThreads;
 
-    return OK_SCHED;
+    return SCHED_NO_ERROR;
 }
 
 /*
@@ -354,6 +391,77 @@ void G8RTOS_Yield()
 {
     // set the PendSV flag to start the scheduler
     SCB->ICSR |= SCB_ICSR_PENDSVSET_Msk;
+}
+
+/*
+ * Returns the currently running thread's id
+ */
+threadId_t G8RTOS_GetThreadId()
+{
+    return CurrentlyRunningThread->thread_id;
+}
+
+/*
+ * Kill the thread with id "threadId"
+ */
+G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId)
+{
+    // Enter a critical section
+    int32_t IBit_State = StartCriticalSection();
+
+    // Return appropriate error code if there’s only one thread running
+    if (NumberOfThreads == 1)
+    {
+        EndCriticalSection(IBit_State);
+        return CANNOT_KILL_LAST_THREAD;
+    }
+
+    // Search for thread with the same threadId
+    int thread_to_kill = -1;
+    for (int i = 0; i < NumberOfThreads; ++i)
+    {
+        if (threadControlBlocks[i].thread_id == threadId)
+        {
+            thread_to_kill = i;
+            break;
+        }
+    }
+
+    // Return error code if the thread does not exist
+    if (thread_to_kill == -1)
+    {
+        EndCriticalSection(IBit_State);
+        return THREAD_DOES_NOT_EXIST;
+    }
+
+    // Set the threads isAlive bit to false
+    threadControlBlocks[thread_to_kill].alive = false;
+
+    // Update thread pointers
+    threadControlBlocks[thread_to_kill].next->prev = threadControlBlocks[thread_to_kill].prev;
+    threadControlBlocks[thread_to_kill].prev->next = threadControlBlocks[thread_to_kill].next;
+
+    // Decrement number of threads
+    --NumberOfThreads;
+
+    // End critical section
+    EndCriticalSection(IBit_State);
+
+    // If thread being killed is the currently running thread, we need to context switch
+    if (threadControlBlocks[thread_to_kill].thread_id == CurrentlyRunningThread->thread_id)
+    {
+        G8RTOS_Yield();
+    }
+
+    return SCHED_NO_ERROR;
+}
+
+/*
+ * Kill the running thread
+ */
+G8RTOS_Scheduler_Error G8RTOS_KillSelf()
+{
+    return G8RTOS_KillThread(CurrentlyRunningThread->thread_id);
 }
 
 /*********************************************** Public Functions *********************************************************************/
