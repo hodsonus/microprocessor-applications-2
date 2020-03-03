@@ -459,8 +459,6 @@ void LCD_Init(bool usingTP)
 
         // Enable interrupts for this pin
         P4->IE |= BIT0;
-
-        NVIC_EnableIRQ(PORT4_IRQn);
     }
 
     LCD_reset();
@@ -572,8 +570,8 @@ Point TP_ReadXY()
      * this by the max screen size for either X or Y, you will get the position
      *  of the touched point. */
 
-    p.x = x_temp/4096*MAX_SCREEN_X;
-    p.y = y_temp/4096*MAX_SCREEN_Y;
+    p.x = x_temp*MAX_SCREEN_X/4096;
+    p.y = y_temp*MAX_SCREEN_Y/4096;
 
     /* Return point  */ 
     return p;

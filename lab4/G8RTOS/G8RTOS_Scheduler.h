@@ -13,7 +13,7 @@
 #define MAX_PTHREADS 6
 #define STACK_SIZE 1024
 #define PENDSV_PRIORITY 7
-#define SYSTICK_PRIORITY 3
+#define SYSTICK_PRIORITY 7
 /*********************************************** Sizes and Limits *********************************************************************/
 
 
@@ -112,7 +112,7 @@ G8RTOS_Scheduler_Error G8RTOS_KillSelf();
  * Add an aperiodic event thread (essentially an interrupt routine) by
  * initializing appropriate NVIC registers.
  */
-G8RTOS_Scheduler_Error G8RTOS_AddAPeriodicEvent(void (*AthreadToAdd)(void), uint8_t priority, IRQn_Type IRQn);
+G8RTOS_Scheduler_Error G8RTOS_AddAperiodicEvent(void (*AthreadToAdd)(void), uint8_t priority, IRQn_Type IRQn);
 
 /*********************************************** Public Functions *********************************************************************/
 

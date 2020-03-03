@@ -197,7 +197,7 @@ void G8RTOS_Init(bool LCD_usingTP)
 
     // Initialize all hardware on the board
     BSP_InitBoard(LCD_usingTP);
-    LCD_Text(MAX_SCREEN_X/2-25, MAX_SCREEN_Y/2-25, "G8RTOS", LCD_RED);
+    LCD_Text(MAX_SCREEN_X/2-25, 0, "G8RTOS", LCD_RED);
 }
 
 /*
@@ -491,7 +491,7 @@ G8RTOS_Scheduler_Error G8RTOS_KillSelf()
  * Add an aperiodic event thread (essentially an interrupt routine) by
  * initializing appropriate NVIC registers.
  */
-G8RTOS_Scheduler_Error G8RTOS_AddAPeriodicEvent(void (*AthreadToAdd)(void), uint8_t priority, IRQn_Type IRQn)
+G8RTOS_Scheduler_Error G8RTOS_AddAperiodicEvent(void (*AthreadToAdd)(void), uint8_t priority, IRQn_Type IRQn)
 {
     int32_t IBit_State = StartCriticalSection();
 
