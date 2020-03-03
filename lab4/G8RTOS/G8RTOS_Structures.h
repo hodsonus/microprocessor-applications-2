@@ -11,13 +11,15 @@
 #include <G8RTOS/G8RTOS_Semaphores.h>
 #include <stdbool.h>
 
+#define MAX_NAME_LENGTH 16
+typedef uint32_t threadId_t;
+
 /*********************************************** Data Structure Definitions ***********************************************************/
 
 /*
  *  Thread Control Block:
  *      - Every thread has a Thread Control Block
  *      - The Thread Control Block holds information about the Thread Such as the Stack Pointer, Priority Level, and Blocked Status
- *      - For Lab 2 the TCB will only hold the Stack Pointer, next TCB and the previous TCB (for Round Robin Scheduling)
  */
 
 typedef struct tcb_t
@@ -30,6 +32,8 @@ typedef struct tcb_t
     bool asleep;
     uint32_t sleep_cnt;
     semaphore_t* blocked;
+    threadId_t threadID;
+    char threadName[MAX_NAME_LENGTH];
 } tcb_t;
 
 /*

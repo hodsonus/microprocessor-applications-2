@@ -60,7 +60,7 @@ G8RTOS_Scheduler_Error G8RTOS_Launch();
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
  * Returns: Error code for adding threads
  */
-G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void));
+G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t priority);
 
 /*
  * Adds periodic threads to G8RTOS Scheduler

@@ -85,24 +85,27 @@ static void InitSysTick()
 
 /*
  * Chooses the next thread to run.
- * Lab 2 Scheduling Algorithm:
- * 	- Simple Round Robin: Choose the next running thread by selecting the currently running thread's next pointer
- * 	- Check for sleeping and blocked threads
  */
 void G8RTOS_Scheduler()
 {
-    // start our search for a new thread at the next thread
-    tcb_t* thread_to_schedule = CurrentlyRunningThread->next;
-
-    // while the thread is blocked or asleep
-    while (thread_to_schedule->blocked != 0 || thread_to_schedule->asleep)
+    /* Set tempNextThread to be the next thread in the linked list (allows for
+     * round-robin scheduling of equal priorities) and iterate through all the
+     * other threads */
+    tcb_t* tempNextThread = CurrentlyRunningThread->next;
+    int currentMaxPriority = 256;
+    for (int i = 0; i < NumberOfThreads; ++i, tempNextThread = tempNextThread->next)
     {
-        // advance the pointer
-        thread_to_schedule = thread_to_schedule->next;
+        /* If tempNextThread is neither sleeping or blocked, we check if its
+         * priority value is less than a currentMaxPriority value (initial
+         * currentMaxPriority value will be 256) */
+        if (!tempNextThread->asleep && tempNextThread->blocked == 0 && tempNextThread->priority < currentMaxPriority)
+        {
+            /* If it is, we set the CurrentlyRunningThread equal to the thread with the
+             *  higher priority, and reinitialize the currentMaxPriority */
+            CurrentlyRunningThread = tempNextThread;
+            currentMaxPriority = tempNextThread->priority;
+        }
     }
-
-    // schedule the thread
-    CurrentlyRunningThread = thread_to_schedule;
 }
 
 /*
@@ -187,15 +190,25 @@ void G8RTOS_Init(bool LCD_usingTP)
 /*
  * Starts G8RTOS Scheduler
  * 	- Initializes the Systick
- * 	- Sets Context to first thread
+ * 	- Sets the priority of the SysTick and the PendSV interrupts
+ * 	- Sets context to first thread to run (the one with the highest priority)
+ * 	- Calls G8RTOS Start to initiate the first context switch and begin exec.
  * Returns: Error Code for starting scheduler. This will only return if the scheduler fails
  */
 G8RTOS_Scheduler_Error G8RTOS_Launch()
 {
     if (NumberOfThreads == 0) return ERR_LAUNCHED_NO_THREADS;
 
-    // Set CurrentlyRunningThread
-    CurrentlyRunningThread = &threadControlBlocks[0];
+    // Set CurrentlyRunningThread to be the thread with the highest priority
+    int max = 0;
+    for (int i = 1; i < NumberOfThreads; ++i)
+    {
+        if (threadControlBlocks[i].priority > threadControlBlocks[max].priority)
+        {
+            max = i;
+        }
+    }
+    CurrentlyRunningThread = &threadControlBlocks[max];
 
     // Initialize SysTick
     InitSysTick();
@@ -221,9 +234,11 @@ G8RTOS_Scheduler_Error G8RTOS_Launch()
  * 	- Sets stack tcb stack pointer to top of thread stack
  * 	- Sets up the next and previous tcb pointers in a round robin fashion
  * Param "threadToAdd": Void-Void Function to add as preemptable main thread
+ * Param "priority": Priority of the thread that is being added. 0 is the
+ *                   highest and 255 is the lowest priority.
  * Returns: Error code for adding threads
  */
-G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void))
+G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t priority)
 {
     // Checks if there are still available threads to insert to scheduler
     if (NumberOfThreads >= MAX_THREADS) return ERR_MAX_THREADS_SCHEDULED;
@@ -269,6 +284,8 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void))
     threadStacks[NumberOfThreads][STACKSIZE-14] = ZERO; // R6
     threadStacks[NumberOfThreads][STACKSIZE-15] = ZERO; // R5
     threadStacks[NumberOfThreads][STACKSIZE-16] = ZERO; // R4
+
+    threadControlBlocks[NumberOfThreads].priority = priority;
 
     NumberOfThreads++;
 

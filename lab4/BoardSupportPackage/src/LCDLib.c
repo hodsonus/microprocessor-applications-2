@@ -546,7 +546,7 @@ void LCD_Init(bool usingTP)
  *******************************************************************************/
 Point TP_ReadXY()
 {
-    uint16_t x_temp, t_temp;
+    uint16_t x_temp, y_temp;
 
     SPI_CS_TP_LOW;
 
