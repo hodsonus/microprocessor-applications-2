@@ -10,6 +10,9 @@
 #include "BSP.h"
 #include "G8RTOS/G8RTOS.h"
 
+#define LO -25
+#define HI 25
+
 static ball balls[MAX_BALLS];
 bool LCDTapped = false;
 uint8_t NumberOfBalls = 0;
@@ -176,15 +179,17 @@ void Ball(void)
     balls[ball_to_animate].x_position = point >> 16;
     balls[ball_to_animate].y_position = point & 0xFFFF;
 
-    // Initialize x and y velocity randomly (generate random number in +/-32)
-    balls[ball_to_animate].x_velocity = (int32_t)(rand() & 2^6) - 2^5;
-    balls[ball_to_animate].y_velocity = (int32_t)(rand() & 2^6) - 2^5;
+    // Initialize x and y velocity randomly (generate random number from LO to HI)
+    balls[ball_to_animate].x_velocity = LO + rand() / (RAND_MAX / (HI - LO + 1) + 1);
+    balls[ball_to_animate].y_velocity = LO + rand() / (RAND_MAX / (HI - LO + 1) + 1);
 
     // Initialize the ball as alive with the current thread id
     balls[ball_to_animate].alive = true;
     balls[ball_to_animate].thread_id = G8RTOS_GetThreadId();
 
-    // TODO - Set the color of the ball
+    /* Set the color of the ball (rand() generates 15 bit numbers, colors
+     * generated here need to be 16 bit or we will miss half of the possible
+     * colors) */
     balls[ball_to_animate].color = (int16_t)(rand() << 1);
 
     ++NumberOfBalls;

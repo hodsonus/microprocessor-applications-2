@@ -78,7 +78,7 @@ void G8RTOS_SignalSemaphore(semaphore_t* s)
         while (thread->blocked != s) thread = thread->next;
 
         // and unblock it
-        thread->blocked = 0;
+        thread->blocked = NULL;
     }
 
     EndCriticalSection(IBit_State);

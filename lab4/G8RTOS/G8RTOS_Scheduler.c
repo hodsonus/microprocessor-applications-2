@@ -109,7 +109,7 @@ void G8RTOS_Scheduler()
         /* If tempNextThread is neither sleeping or blocked, we check if its
          * priority value is less than a currentMaxPriority value (initial
          * currentMaxPriority value will be 256) */
-        if (tempNextThread->alive && !tempNextThread->asleep && tempNextThread->blocked == 0 && tempNextThread->priority < currentMaxPriority)
+        if (tempNextThread->alive && !tempNextThread->asleep && tempNextThread->blocked == NULL && tempNextThread->priority < currentMaxPriority)
         {
             /* If it is, we set the CurrentlyRunningThread equal to the thread with the
              *  higher priority, and reinitialize the currentMaxPriority */
@@ -230,10 +230,8 @@ G8RTOS_Scheduler_Error G8RTOS_Launch()
     // Initialize SysTick
     InitSysTick();
 
-    // Set the priority of PendSV to the OS's priority (traditionally the lowest possible)
+    // Set the priority of our OS (traditionally the lowest possible)
     __NVIC_SetPriority(PendSV_IRQn, PENDSV_PRIORITY);
-
-    // TODO - should SysTick be the same priority as PendSV?
     __NVIC_SetPriority(SysTick_IRQn, SYSTICK_PRIORITY);
 
     // Call G8RTOS_Start
@@ -301,9 +299,6 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t prior
         {
             if (threadControlBlocks[i].alive)
             {
-                // TODO - the problem is somewhere in some combination of Scheduler, AddThread, and KillThread
-                // The scheduler cannot seem to find all of the alive threads? New alive threads don't seem to be scheduled AFTER a thread is killed.
-
                 // Arrange the new TCB's pointers to look as though it came after the alive thread
                 threadControlBlocks[tcbToInitialize].prev = &threadControlBlocks[i];
                 threadControlBlocks[tcbToInitialize].next = threadControlBlocks[i].next;
@@ -340,6 +335,8 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t prior
 
     threadControlBlocks[tcbToInitialize].priority = priority;
     threadControlBlocks[tcbToInitialize].alive = true;
+    threadControlBlocks[tcbToInitialize].asleep = false;
+    threadControlBlocks[tcbToInitialize].blocked = NULL;
     threadControlBlocks[tcbToInitialize].thread_id = ((IDCounter++) << 16) | tcbToInitialize;
     strcpy(threadControlBlocks[tcbToInitialize].thread_name, thread_name);
 

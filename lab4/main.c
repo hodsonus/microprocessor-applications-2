@@ -15,7 +15,8 @@ void main(void)
 {
     G8RTOS_Init(USING_TP);
 
-//    srand(TLV->RANDOM_NUM_1);
+    /* Can alternatively use TLV->RANDOM_NUM_1 for repeatable color and
+     * velocity generation. */
     srand(time(NULL));
 
     // initialize our FIFOs
