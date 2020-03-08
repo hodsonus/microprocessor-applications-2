@@ -5,12 +5,14 @@
  *      Author: johnhodson
  */
 
+#include <stdlib.h>
 #include "Balls.h"
 #include "BSP.h"
 #include "G8RTOS/G8RTOS.h"
 
 static ball balls[MAX_BALLS];
 bool LCDTapped = false;
+uint8_t NumberOfBalls = 0;
 int16_t x_accel;
 int16_t y_accel;
 
@@ -37,7 +39,9 @@ void LCDTappedWorker(void)
         if (LCDTapped)
         {
             // Retrieve the location at which the screen was tapped
+            G8RTOS_WaitSemaphore(&lcd_mutex);
             Point tap = TP_ReadXY();
+            G8RTOS_SignalSemaphore(&lcd_mutex);
 
             // Determine if we are destroying a ball
             int ballToKill = -1;
@@ -79,16 +83,24 @@ void LCDTappedWorker(void)
             {
                 // Else if we did find a ball to kill
 
-                // Erase the old ball from the screen
-                draw_ball(BACKGROUND_COLOR,
-                          balls[ballToKill].x_position,
-                          balls[ballToKill].y_position);
+                // Kill its respective thread
+                G8RTOS_WaitSemaphore(&lcd_mutex);
+                G8RTOS_Scheduler_Error error = G8RTOS_KillThread(balls[ballToKill].thread_id);
+                G8RTOS_SignalSemaphore(&lcd_mutex);
 
-                // Mark it as dead
-                balls[ballToKill].alive = false;
-
-                // And kill its respective thread
-                G8RTOS_KillThread(balls[ballToKill].thread_id);
+                /* And remove the ball from our records if the thread removal
+                 * was successful. */
+                if (error == SCHEDULER_NO_ERROR)
+                {
+                    // Erase the old ball from the screen
+                    draw_ball(BACKGROUND_COLOR,
+                              balls[ballToKill].x_position,
+                              balls[ballToKill].y_position);
+                    // Mark it as dead
+                    balls[ballToKill].alive = false;
+                    // Decrement the number of active balls
+                    --NumberOfBalls;
+                }
             }
 
             /* Sleep to account for screen bouncing and then reset the flag so
@@ -102,25 +114,36 @@ void LCDTappedWorker(void)
 /* Background thread - a thread that retrieves the accelerometer's current orientation. */
 void ReadAccelerometer(void)
 {
+    /* The initial values read by the accelerometer will be used to zero future
+     * readings */
+    int16_t x_accel_zero, y_accel_zero, x_accel_temp, y_accel_temp;
+
+    bmi160_read_accel_x(&x_accel_zero);
+    bmi160_read_accel_y(&y_accel_zero);
+
     while(1)
     {
         // Read the most up to date value from the accelerometer
-        bmi160_read_accel_x(&x_accel);
-        bmi160_read_accel_y(&y_accel);
+        bmi160_read_accel_x(&x_accel_temp);
+        bmi160_read_accel_y(&y_accel_temp);
 
         /* Scale the acceleration back to a number we can work with and flip
          * it if necessary */
-        x_accel = x_accel/ACCELERATION_SCALER;
-        y_accel = -y_accel/ACCELERATION_SCALER;
+        x_accel_temp = (x_accel_temp - x_accel_zero)/ACCELERATION_SCALER;
+        y_accel_temp = -(y_accel_temp - y_accel_zero)/ACCELERATION_SCALER;
 
         // Cap out the acceleration at +/- MAX_ACCELERATION for x and y
-        if (x_accel >= MAX_ACCELERATION) x_accel = MAX_ACCELERATION;
-        else if (x_accel <= -MAX_ACCELERATION) x_accel = -MAX_ACCELERATION;
-        if (y_accel >= MAX_ACCELERATION) y_accel = MAX_ACCELERATION;
-        else if (y_accel <= -MAX_ACCELERATION) y_accel = -MAX_ACCELERATION;
+        if (x_accel_temp >= MAX_ACCELERATION) x_accel_temp = MAX_ACCELERATION;
+        else if (x_accel_temp <= -MAX_ACCELERATION) x_accel_temp = -MAX_ACCELERATION;
+        if (y_accel_temp >= MAX_ACCELERATION) y_accel_temp = MAX_ACCELERATION;
+        else if (y_accel_temp <= -MAX_ACCELERATION) y_accel_temp = -MAX_ACCELERATION;
 
-        // Sleep for 100ms
-        G8RTOS_Sleep(100);
+        // Set the global variables
+        x_accel = x_accel_temp;
+        y_accel = y_accel_temp;
+
+        // Sleep for 30ms
+        G8RTOS_Sleep(30);
     }
 }
 
@@ -153,16 +176,18 @@ void Ball(void)
     balls[ball_to_animate].x_position = point >> 16;
     balls[ball_to_animate].y_position = point & 0xFFFF;
 
-    // TODO - Initialize x and y velocity randomly
-    balls[ball_to_animate].x_velocity = 0;
-    balls[ball_to_animate].y_velocity = 0;
+    // Initialize x and y velocity randomly (generate random number in +/-32)
+    balls[ball_to_animate].x_velocity = (int32_t)(rand() & 2^6) - 2^5;
+    balls[ball_to_animate].y_velocity = (int32_t)(rand() & 2^6) - 2^5;
 
     // Initialize the ball as alive with the current thread id
     balls[ball_to_animate].alive = true;
     balls[ball_to_animate].thread_id = G8RTOS_GetThreadId();
 
     // TODO - Set the color of the ball
-    balls[ball_to_animate].color = LCD_RED;
+    balls[ball_to_animate].color = (int16_t)(rand() << 1);
+
+    ++NumberOfBalls;
 
     while(1)
     {
@@ -210,5 +235,7 @@ void Idle(void)
 /* Helper function used to draw and erase a ball from the screen. */
 void draw_ball(uint16_t color, uint16_t x_start, uint16_t y_start)
 {
+    G8RTOS_WaitSemaphore(&lcd_mutex);
     LCD_DrawRectangle(x_start, x_start+BALL_SIZE, y_start, y_start+BALL_SIZE, color);
+    G8RTOS_SignalSemaphore(&lcd_mutex);
 }

@@ -10,15 +10,15 @@
 
 #include "G8RTOS/G8RTOS_Structures.h"
 
-#define MAX_BALLS 20
+#define MAX_BALLS 3
 #define COORD_FIFO 0
-#define TAP_DISTANCE_THRESHOLD 15
+#define TAP_DISTANCE_THRESHOLD 25
 #define BACKGROUND_COLOR LCD_BLACK
 
-#define BALL_THREAD_PRIORITY 50
+#define BALL_THREAD_PRIORITY 45
 #define ACCEL_THREAD_PRIORITY 50
 #define WORKER_PRIORITY 50
-#define BALL_SIZE 2
+#define BALL_SIZE 4
 #define MAX_VELOCITY 50
 #define MAX_ACCELERATION 50
 #define ACCELERATION_SCALER 200
@@ -33,6 +33,8 @@ typedef struct ball {
     threadId_t thread_id;
     uint16_t color;
 } ball;
+
+semaphore_t lcd_mutex;
 
 /* Aperiodic event - sets a flag when the screen is tapped. */
 void LCDTapHandler(void);

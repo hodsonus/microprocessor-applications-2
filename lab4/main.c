@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <time.h>
 #include "G8RTOS/G8RTOS.h"
 #include "Balls.h"
 #include "msp.h"
@@ -13,8 +15,14 @@ void main(void)
 {
     G8RTOS_Init(USING_TP);
 
+//    srand(TLV->RANDOM_NUM_1);
+    srand(time(NULL));
+
     // initialize our FIFOs
     G8RTOS_InitFIFO(COORD_FIFO);
+
+    // initialize the semaphore protecting the LCD
+    G8RTOS_InitSemaphore(&lcd_mutex, 1);
 
     // add our normal threads
     G8RTOS_AddThread(&ReadAccelerometer, ACCEL_THREAD_PRIORITY, "accelerometer");

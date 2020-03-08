@@ -109,7 +109,7 @@ void G8RTOS_Scheduler()
         /* If tempNextThread is neither sleeping or blocked, we check if its
          * priority value is less than a currentMaxPriority value (initial
          * currentMaxPriority value will be 256) */
-        if (!tempNextThread->asleep && tempNextThread->blocked == 0 && tempNextThread->priority < currentMaxPriority)
+        if (tempNextThread->alive && !tempNextThread->asleep && tempNextThread->blocked == 0 && tempNextThread->priority < currentMaxPriority)
         {
             /* If it is, we set the CurrentlyRunningThread equal to the thread with the
              *  higher priority, and reinitialize the currentMaxPriority */
@@ -265,7 +265,6 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t prior
         return THREAD_LIMIT_REACHED;
     }
 
-
     // tcbToInitialize will be the first TCB not alive
     int tcbToInitialize = -1;
     for (int i = 0; i < MAX_THREADS; ++i)
@@ -302,6 +301,9 @@ G8RTOS_Scheduler_Error G8RTOS_AddThread(void (*threadToAdd)(void), uint8_t prior
         {
             if (threadControlBlocks[i].alive)
             {
+                // TODO - the problem is somewhere in some combination of Scheduler, AddThread, and KillThread
+                // The scheduler cannot seem to find all of the alive threads? New alive threads don't seem to be scheduled AFTER a thread is killed.
+
                 // Arrange the new TCB's pointers to look as though it came after the alive thread
                 threadControlBlocks[tcbToInitialize].prev = &threadControlBlocks[i];
                 threadControlBlocks[tcbToInitialize].next = threadControlBlocks[i].next;
@@ -467,17 +469,17 @@ G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId)
     threadControlBlocks[thread_to_kill].next->prev = threadControlBlocks[thread_to_kill].prev;
     threadControlBlocks[thread_to_kill].prev->next = threadControlBlocks[thread_to_kill].next;
 
-    // Decrement number of threads
-    --NumberOfThreads;
-
-    // End critical section
-    EndCriticalSection(IBit_State);
-
     // If thread being killed is the currently running thread, we need to context switch
     if (threadControlBlocks[thread_to_kill].thread_id == CurrentlyRunningThread->thread_id)
     {
         G8RTOS_Yield();
     }
+
+    // Decrement number of threads
+    --NumberOfThreads;
+
+    // End critical section
+    EndCriticalSection(IBit_State);
 
     return SCHEDULER_NO_ERROR;
 }

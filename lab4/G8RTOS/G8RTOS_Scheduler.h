@@ -9,7 +9,7 @@
 #include "msp.h"
 
 /*********************************************** Sizes and Limits *********************************************************************/
-#define MAX_THREADS 20
+#define MAX_THREADS 25
 #define MAX_PTHREADS 3
 #define STACK_SIZE 512
 #define PENDSV_PRIORITY 7
