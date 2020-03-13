@@ -234,11 +234,6 @@ void thread4(void)
     }
 }
 
-void thread5(void)
-{
-    while(1);
-}
-
 void pthread0(void)
 {
     int16_t x_coord, y_coord;
