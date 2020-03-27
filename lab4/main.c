@@ -1,10 +1,14 @@
 #include <stdlib.h>
 #include <time.h>
 #include "G8RTOS/G8RTOS.h"
-#include "Balls.h"
 #include "msp.h"
 
 /* ---------------------------------------- MAIN ---------------------------------------- */
+
+#define QUIZ
+
+#ifdef DEMO
+#include "Balls.h"
 
 #define USING_TP true
 
@@ -36,5 +40,25 @@ void main(void)
     // and launch the OS!
     G8RTOS_Launch();
 }
+
+#endif
+
+#ifdef QUIZ
+#include "Snake.h"
+#define USING_TP false
+
+/**
+ * main.c
+ */
+void main(void)
+{
+    G8RTOS_Init(USING_TP);
+
+    G8RTOS_AddThread(&init, 0, "init");
+
+    G8RTOS_Launch();
+}
+
+#endif
 
 /* ---------------------------------------- MAIN ---------------------------------------- */

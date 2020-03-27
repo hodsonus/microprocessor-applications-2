@@ -427,6 +427,17 @@ threadId_t G8RTOS_GetThreadId()
 }
 
 /*
+ * Kill all threads, except for the CRT.
+ */
+void G8RTOS_KillAllOtherThreads()
+{
+    for (int i = 0; i < NumberOfThreads; ++i)
+    {
+        if (&threadControlBlocks[i] != CurrentlyRunningThread) G8RTOS_KillThread(threadControlBlocks[i].thread_id);
+    }
+}
+
+/*
  * Kill the thread with id threadId.
  */
 G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId)

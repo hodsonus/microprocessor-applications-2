@@ -10,7 +10,7 @@
 #include <BSP.h>
 #include "Quiz.h"
 
-#define MAX_SPEED 64
+#define MAX_SPEED 100
 #define DELTA_SPEED MAX_SPEED
 #define ENEMY_INIT_SPEED MAX_SPEED * 8
 

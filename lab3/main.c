@@ -3,7 +3,7 @@
 
 /* ---------------------------------------- MAIN ---------------------------------------- */
 
-#define DEMO
+#define QUIZ
 
 /* Avoids breaking our scheduler
  * if every thread is blocked or asleep */
