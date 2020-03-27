@@ -99,6 +99,11 @@ void G8RTOS_Yield();
 threadId_t G8RTOS_GetThreadId();
 
 /*
+ * Kill all threads, except for the CRT.
+ */
+void G8RTOS_KillAllOtherThreads();
+
+/*
  * Kill the thread with id threadId.
  */
 G8RTOS_Scheduler_Error G8RTOS_KillThread(threadId_t threadId);

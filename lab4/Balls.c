@@ -232,7 +232,7 @@ void Ball(void)
 }
 
 /* Background thread - an idle thread that runs when nothing else can run. */
-void Idle(void)
+void IdleBalls(void)
 {
     while(1);
 }

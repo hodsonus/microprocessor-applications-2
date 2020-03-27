@@ -380,6 +380,10 @@ inline uint16_t LCD_ReadData()
 
     SPISendRecvByte(SPI_START | SPI_RD | SPI_DATA);   /* Read: RS = 1, RW = 1   */
     SPISendRecvByte(0);                               /* Dummy read 1           */
+//    SPISendRecvByte(0);                               /* Dummy read 2           */
+//    SPISendRecvByte(0);                               /* Dummy read 3           */
+//    SPISendRecvByte(0);                               /* Dummy read 4           */
+//    SPISendRecvByte(0);                               /* Dummy read 5           */
     value = (SPISendRecvByte(0) << 8);                /* Read D8..D15           */
     value |= SPISendRecvByte(0);                      /* Read D0..D7            */
 
@@ -535,6 +539,21 @@ void LCD_Init(bool usingTP)
 }
 
 /*******************************************************************************
+ * Function Name  : LCD_ReadPixelColor
+ * Description    : Reads color from designated pixel
+ * Input          : X and y coordinate
+ * Output         : None
+ * Return         : Pixel color of designated coordinate
+ * Attention      : None
+ *******************************************************************************/
+uint16_t LCD_ReadPixelColor(uint16_t x, uint16_t y)
+{
+    LCD_SetCursor(x, y);
+    LCD_WriteIndex(GRAM);
+    return LCD_ReadData();
+}
+
+/*******************************************************************************
  * Function Name  : TP_ReadXY
  * Description    : Obtain X and Y touch coordinates
  * Input          : None
@@ -576,5 +595,6 @@ Point TP_ReadXY()
     /* Return point  */ 
     return p;
 }
+
 /************************************  Public Functions  *******************************************/
 

@@ -52,7 +52,7 @@ void ReadAccelerometer(void);
 void Ball(void);
 
 /* Background thread - an idle thread that runs when nothing else can run. */
-void Idle(void);
+void IdleBalls(void);
 
 /* Helper function used to draw and erase a ball from the screen. */
 void draw_ball(uint16_t color, uint16_t x_start, uint16_t y_start);

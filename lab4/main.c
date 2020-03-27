@@ -32,7 +32,7 @@ void main(void)
     // add our normal threads
     G8RTOS_AddThread(&ReadAccelerometer, ACCEL_THREAD_PRIORITY, "accelerometer");
     G8RTOS_AddThread(&LCDTappedWorker,   WORKER_PRIORITY,       "worker");
-    G8RTOS_AddThread(&Idle,              255,                   "idle");
+    G8RTOS_AddThread(&IdleBalls,              255,                   "idle");
 
     // add the aperiodic event
     G8RTOS_AddAperiodicEvent(&LCDTapHandler, 4, PORT4_IRQn);
@@ -45,7 +45,7 @@ void main(void)
 
 #ifdef QUIZ
 #include "Snake.h"
-#define USING_TP false
+#define USING_TP true
 
 /**
  * main.c
@@ -54,7 +54,8 @@ void main(void)
 {
     G8RTOS_Init(USING_TP);
 
-    G8RTOS_AddThread(&init, 0, "init");
+    G8RTOS_AddThread(&StartGame, 0, "start");
+    G8RTOS_AddAperiodicEvent(&AperiodicTap, 4, PORT4_IRQn);
 
     G8RTOS_Launch();
 }

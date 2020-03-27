@@ -147,3 +147,22 @@ G8RTOS_FIFO_Error G8RTOS_WriteFIFO(uint32_t i, int32_t data)
 
     return status;
 }
+
+/*
+ * Checks if FIFO i is empty
+ *  - Can be used to prevent a blocking read.
+ *  Param "i": which buffer we want to read from
+ *  Returns: true if the buffer is empty
+ */
+bool G8RTOS_FIFOIsEmpty(uint32_t i)
+{
+    // wait for exclusive access to the FIFO
+    G8RTOS_WaitSemaphore(&(FIFOs[i].mutex));
+
+    bool is_empty = FIFOs[i].current_size == 0;
+
+    // allow others exclusive access to the FIFO
+    G8RTOS_SignalSemaphore(&(FIFOs[i].mutex));
+
+    return is_empty;
+}

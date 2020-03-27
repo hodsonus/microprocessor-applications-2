@@ -289,6 +289,16 @@ inline void LCD_SetCursor(uint16_t Xpos, uint16_t Ypos );
 void LCD_Init(bool usingTP);
 
 /*******************************************************************************
+ * Function Name  : LCD_ReadPixelColor
+ * Description    : Reads color from designated pixel
+ * Input          : X and y coordinate
+ * Output         : None
+ * Return         : Pixel color of designated coordinate
+ * Attention      : None
+ *******************************************************************************/
+uint16_t LCD_ReadPixelColor(uint16_t x, uint16_t y);
+
+/*******************************************************************************
  * Function Name  : TP_ReadXY
  * Description    : Obtain X and Y touch coordinates
  * Input          : None
@@ -297,26 +307,6 @@ void LCD_Init(bool usingTP);
  * Attention      : None
  *******************************************************************************/
 Point TP_ReadXY();
-
-/*******************************************************************************
- * Function Name  : TP_ReadX
- * Description    : Obtain X touch coordinate
- * Input          : None
- * Output         : None
- * Return         : X Coordinate
- * Attention      : None
- *******************************************************************************/
-uint16_t TP_ReadX();
-
-/*******************************************************************************
- * Function Name  : TP_ReadY
- * Description    : Obtain Y touch coordinate
- * Input          : None
- * Output         : None
- * Return         : Y Coordinate
- * Attention      : None
- *******************************************************************************/
-uint16_t TP_ReadY();
 
 /************************************ Public Functions  *******************************************/
 

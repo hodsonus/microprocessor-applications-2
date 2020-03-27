@@ -8,6 +8,8 @@
 #ifndef G8RTOS_IPC_H_
 #define G8RTOS_IPC_H_
 
+#include <stdbool.h>
+
 
 /*********************************************** Error Codes **************************************************************************/
 typedef enum G8RTOS_FIFO_Error
@@ -44,6 +46,14 @@ int32_t G8RTOS_ReadFIFO(uint32_t i);
  *  Returns: error code for full buffer if unable to write
  */
 G8RTOS_FIFO_Error G8RTOS_WriteFIFO(uint32_t i, int32_t data);
+
+/*
+ * Checks if FIFO i is empty
+ *  - Can be used to prevent a blocking read.
+ *  Param "i": which buffer we want to read from
+ *  Returns: true if the buffer is empty
+ */
+bool G8RTOS_FIFOIsEmpty(uint32_t i);
 
 /*********************************************** Public Functions *********************************************************************/
 
