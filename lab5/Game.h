@@ -261,7 +261,7 @@ void DrawObjects();
 void MoveLEDs();
 
 /*
- * Thread to wait for player decision on Host vs. Client
+ * Thread to set up game as host or client, depending on user input
  */
 void HostVsClient();
 

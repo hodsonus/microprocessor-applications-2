@@ -17,7 +17,6 @@ void main(void)
     G8RTOS_Init(USING_TP, HOST_OR_CLIENT);
 
     G8RTOS_AddThread(&HostVsClient, 0, "host vs client");
-    G8RTOS_AddThread(&IdleThread, 255, "idle");
 
     G8RTOS_Launch();
 }
