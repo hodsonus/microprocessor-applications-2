@@ -185,7 +185,7 @@ uint32_t SystemTime;
  * Sets variables to an initial state (system time and number of threads)
  * Enables board for highest speed clock and disables watchdog
  */
-void G8RTOS_Init(bool LCD_usingTP)
+void G8RTOS_Init(bool LCD_usingTP, playerType wifi_hostOrClient)
 {
     // Initialize system time, number of threads, and ID counter to zero
     SystemTime = 0;
@@ -200,7 +200,7 @@ void G8RTOS_Init(bool LCD_usingTP)
     SCB->VTOR = newVTORTable;
 
     // Initialize all hardware on the board
-    BSP_InitBoard(LCD_usingTP);
+    BSP_InitBoard(LCD_usingTP, wifi_hostOrClient);
 }
 
 /*

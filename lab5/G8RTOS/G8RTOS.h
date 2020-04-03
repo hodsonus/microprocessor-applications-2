@@ -5,6 +5,8 @@
 #ifndef G8RTOS_H_
 #define G8RTOS_H_
 
+#include "BSP.h"
+#include "G8RTOS_Structures.h"
 #include "G8RTOS_Scheduler.h"
 #include "G8RTOS_Semaphores.h"
 #include "G8RTOS_IPC.h"

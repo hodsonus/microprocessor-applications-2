@@ -29,23 +29,48 @@ typedef enum
 {
     Client = 0,
     Host = 1
-}playerType;
+} playerType;
 
-/* IP addressed of server side socket.
- * Should be in long format, E.g: 0xc0a8010a == 192.168.1.10
- */
-#define HOST_IP_ADDR           0xC0A80102               // IP address of server to connect to
-#define PORT_NUM               5001                     // Port number to be used
-#define NO_OF_PACKETS          1                        // Number of packets to send out
+#define JOHN
 
-/*
- * Static IP address for host
- */
-#define CONFIG_IP       SL_IPV4_VAL(192,168,1,2)       /* Static IP to be configured */
-#define AP_MASK         SL_IPV4_VAL(255,255,255,0)      /* Subnet Mask for the station */
-#define AP_GATEWAY      SL_IPV4_VAL(192,168,1,1)        /* Default Gateway address */
-#define AP_DNS          SL_IPV4_VAL(0,0,0,0)            /* DNS Server Address */
-#define SL_STOP_TIMEOUT        0xFF
+#ifdef JOHN
+    /* IP addressed of server side socket.
+     * Should be in long format, E.g: 0xc0a8010a == 192.168.1.10
+     * Change host IP by
+     * Change IP using "ifconfig | grep inet", can also be found in System Preferences -> Network -> TCP/IP -> Router)
+     */
+    #define HOST_IP_ADDR           0xC0A80191               // IP address of server to connect to (my laptop)
+    #define PORT_NUM               5001                     // Port number to be used (same on laptop and board)
+    #define NO_OF_PACKETS          1                        // Number of packets to send out
+
+    /* Static IP address for host (my board IP, need to change if first 3 numbers do not match the laptop's) */
+    #define CONFIG_IP       SL_IPV4_VAL(192,168,1,223)
+    /* Subnet Mask for the station */
+    #define AP_MASK         SL_IPV4_VAL(255,255,255,0)
+    /* Default Gateway address (IP address of the router, can be found in System Preferences -> Network -> TCP/IP -> Router) */
+    #define AP_GATEWAY      SL_IPV4_VAL(192,168,1,1)
+    /* DNS Server Address */
+    #define AP_DNS          SL_IPV4_VAL(0,0,0,0)
+    #define SL_STOP_TIMEOUT        0xFF
+#endif
+
+#ifdef SHIDA
+    /* IP addressed of server side socket.
+     * Should be in long format, E.g: 0xc0a8010a == 192.168.1.10
+     */
+    #define HOST_IP_ADDR           0xC0A8018B               // IP address of server to connect to
+    #define PORT_NUM               5001                     // Port number to be used
+    #define NO_OF_PACKETS          1                        // Number of packets to send out
+
+    /*
+     * Static IP address for host
+     */
+    #define CONFIG_IP       SL_IPV4_VAL(192,168,1,2)       /* Static IP to be configured */
+    #define AP_MASK         SL_IPV4_VAL(255,255,255,0)      /* Subnet Mask for the station */
+    #define AP_GATEWAY      SL_IPV4_VAL(192,168,1,1)        /* Default Gateway address */
+    #define AP_DNS          SL_IPV4_VAL(0,0,0,0)            /* DNS Server Address */
+    #define SL_STOP_TIMEOUT        0xFF
+#endif
 
 /* Application specific status/error codes */
 typedef enum{

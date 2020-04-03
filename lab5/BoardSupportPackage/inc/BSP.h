@@ -19,11 +19,12 @@
 #include "Joystick.h"
 #include "RGBLeds.h"
 #include "LCDLib.h"
+#include "cc3100_usage.h"
 
 /********************************** Public Functions **************************************/
 
 /* Initializes the entire board */
-extern void BSP_InitBoard(bool LCD_usingTP);
+extern void BSP_InitBoard(bool LCD_usingTP, playerType wifi_hostOrClient);
 
 /********************************** Public Functions **************************************/
 

@@ -12,7 +12,7 @@
 
 
 /* Initializes the entire board */
-void BSP_InitBoard(bool LCD_usingTP)
+void BSP_InitBoard(bool LCD_usingTP, playerType wifi_hostOrClient)
 {
 	/* Disable Watchdog */
 	WDT_A_clearTimer();
@@ -56,4 +56,8 @@ void BSP_InitBoard(bool LCD_usingTP)
 	/* Init LCD */
 	LCD_Init(LCD_usingTP);
 	DelayMs(50);
+
+    /* Init CC3100 */
+	initCC3100(wifi_hostOrClient);
+    DelayMs(50);
 }

@@ -11,7 +11,7 @@
 /*********************************************** Includes ********************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
-#include "../G8RTOS_Lab5/G8RTOS.h"
+#include "G8RTOS/G8RTOS.h"
 #include "cc3100_usage.h"
 #include "LCDLib.h"
 /*********************************************** Includes ********************************************************************/
@@ -259,6 +259,11 @@ void DrawObjects();
  * Thread to update LEDs based on score
  */
 void MoveLEDs();
+
+/*
+ * Thread to wait for player decision on Host vs. Client
+ */
+void HostVsClient();
 
 /*********************************************** Common Threads *********************************************************************/
 

@@ -5,8 +5,10 @@
 #ifndef G8RTOS_SCHEDULER_H_
 #define G8RTOS_SCHEDULER_H_
 
-#include "G8RTOS_Structures.h"
+#include "G8RTOS/G8RTOS.h"
 #include "msp.h"
+#include "cc3100_usage.h"
+#include <stdbool.h>
 
 /*********************************************** Sizes and Limits *********************************************************************/
 #define MAX_THREADS 25
@@ -47,7 +49,7 @@ extern uint32_t SystemTime;
 /*
  * Initializes variables and hardware for G8RTOS usage
  */
-void G8RTOS_Init(bool LCD_usingTP);
+void G8RTOS_Init(bool LCD_usingTP, playerType wifi_hostOrClient);
 
 /*
  * Starts G8RTOS Scheduler
