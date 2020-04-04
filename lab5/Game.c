@@ -70,7 +70,7 @@ void JoinGame()
     }
 
     // TODO - Initialize the board state
-
+    InitBoardState();
 
     // Add client and common threads
     // TODO - determine priorities
@@ -510,6 +510,25 @@ playerType GetPlayerRole()
 void DrawPlayer(GeneralPlayerInfo_t * player)
 {
    // TODO
+
+    // Bottom player
+    if((player->position)==BOTTOM){
+        LCD_DrawRectangle(player->currentCenter-PADDLE_LEN_D2,
+                          player->currentCenter+PADDLE_LEN_D2,
+                          BOTTOM_PADDLE_EDGE,
+                          ARENA_MAX_Y,
+                          player->color
+        );
+    }
+    // Top player
+    else{
+        LCD_DrawRectangle(player->currentCenter-PADDLE_LEN_D2,
+                          player->currentCenter+PADDLE_LEN_D2,
+                          ARENA_MIN_Y,
+                          TOP_PADDLE_EDGE,
+                          player->color
+        );
+    }
 }
 
 /*
@@ -518,6 +537,7 @@ void DrawPlayer(GeneralPlayerInfo_t * player)
 void UpdatePlayerOnScreen(PrevPlayer_t * prevPlayerIn, GeneralPlayerInfo_t * outPlayer)
 {
    // TODO
+
 }
 
 /*
@@ -529,11 +549,81 @@ void UpdateBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall, uint16_
 }
 
 /*
+ * Function updates overall scores
+ */
+void UpdateOverallScore(){
+    // Convert score to string
+    char player0ScoreStr[3], player1ScoreStr[3];
+    snprintf(player0ScoreStr, 3, "%02d", gameState.overallScores[0]);
+    snprintf(player1ScoreStr, 3, "%02d", gameState.overallScores[1]);
+
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
+    // Clear score region
+    LCD_DrawRectangle(TOP_SCORE_MIN_X, TOP_SCORE_MAX_X, TOP_SCORE_MIN_Y, TOP_SCORE_MAX_Y, BACK_COLOR);
+    LCD_DrawRectangle(BOTTOM_SCORE_MIN_X, BOTTOM_SCORE_MAX_X, BOTTOM_SCORE_MIN_Y, BOTTOM_SCORE_MAX_Y, BACK_COLOR);
+    // if player0 is BOTTOM, player1 is TOP
+    if(gameState.players[0].position==BOTTOM){
+        LCD_Text(BOTTOM_SCORE_MIN_X, BOTTOM_SCORE_MIN_Y, player0ScoreStr, gameState.players[0].color);
+        LCD_Text(TOP_SCORE_MIN_X, TOP_SCORE_MIN_Y, player1ScoreStr, gameState.players[1].color);
+    }
+    // player0 is TOP, player1 is BUTTOM
+    else{
+        LCD_Text(TOP_SCORE_MIN_X, TOP_SCORE_MIN_Y, player0ScoreStr, gameState.players[0].color);
+        LCD_Text(BOTTOM_SCORE_MIN_X, BOTTOM_SCORE_MIN_Y, player1ScoreStr, gameState.players[1].color);
+    }
+    G8RTOS_SignalSemaphore(&LCD_Mutex);
+}
+
+/*
+ * Function updates LED scores
+ */
+void UpdateLEDScore(){
+    uint16_t player0LEDScore=0;
+    uint16_t player1LEDScore=0;
+    for(int i=0; i<gameState.LEDScores[0]; i++){
+        player0LEDScore|=(1<<i);
+    }
+    for(int i=0; i<gameState.LEDScores[1]; i++){
+        player1LEDScore|=(1<<i);
+    }
+
+    G8RTOS_WaitSemaphore(&LED_Mutex);
+    // clear LED scores
+    LP3943_LedModeSet(BLUE, 0);
+    LP3943_LedModeSet(RED, 0);
+    // if player0 is RED, player1 is BLUE
+    if(gameState.players[0].color==PLAYER_RED){
+        LP3943_LedModeSet(RED, player0LEDScore);
+        LP3943_LedModeSet(BLUE, player1LEDScore);
+    }
+    // player0 is BLUE, player1 is RED
+    else{
+        LP3943_LedModeSet(BLUE, player0LEDScore);
+        LP3943_LedModeSet(RED, player1LEDScore);
+    }
+    G8RTOS_SignalSemaphore(&LED_Mutex);
+}
+
+/*
  * Initializes and prints initial game state
  */
 void InitBoardState()
 {
    // TODO
-}
+    // Clear background
+    LCD_Clear(BACK_COLOR);
 
+    // Draw two vertical lines
+    for(int i=ARENA_MIN_Y; i<=ARENA_MAX_Y; i++){
+        LCD_SetPoint(ARENA_MIN_X, i, LCD_WHITE);
+        LCD_SetPoint(ARENA_MAX_X, i, LCD_WHITE);
+    }
+    // Draw player paddles
+    DrawPlayer(&(gameState.players[0]));
+    DrawPlayer(&(gameState.players[1]));
+
+    // Draw scores
+    UpdateOverallScore();
+    UpdateLEDScore();
+}
 /*********************************************** Public Functions *********************************************************************/

@@ -37,15 +37,18 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define ARENA_MAX_Y                  240
 
 /* Size of objects */
+/* Note: LEN is always X-coordinate, WID is alway Y-coordinate */
 #define PADDLE_LEN                   64
 #define PADDLE_LEN_D2                (PADDLE_LEN >> 1)
 #define PADDLE_WID                   4
 #define PADDLE_WID_D2                (PADDLE_WID >> 1)
 #define BALL_SIZE                    4
 #define BALL_SIZE_D2                 (BALL_SIZE >> 1)
+#define SCORE_LEN                    8
+#define SCORE_WID                    16
 
 /* Centers for paddles at the center of the sides */
-#define PADDLE_X_CENTER              MAX_SCREEN_X >> 1
+#define PADDLE_X_CENTER              (MAX_SCREEN_X >> 1)
 
 /* Edge limitations for player's center coordinate */
 #define HORIZ_CENTER_MAX_PL          (ARENA_MAX_X - PADDLE_LEN_D2)
@@ -58,6 +61,17 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 /* Edge coordinates for paddles */
 #define TOP_PADDLE_EDGE              (ARENA_MIN_Y + PADDLE_WID)
 #define BOTTOM_PADDLE_EDGE           (ARENA_MAX_Y - PADDLE_WID)
+
+/* Edge coordinates for the scores */
+#define TOP_SCORE_MIN_X              (TOP_SCORE_MAX_X - SCORE_LEN)
+#define TOP_SCORE_MAX_X              (ARENA_MIN_X - 1)
+#define TOP_SCORE_MIN_Y              ARENA_MIN_Y
+#define TOP_SCORE_MAX_Y              (TOP_SCORE_MIN_Y + SCORE_WID)
+
+#define BOTTOM_SCORE_MIN_X           (BOTTOM_SCORE_MAX_X - SCORE_LEN)
+#define BOTTOM_SCORE_MAX_X           (ARENA_MIN_X - 1)
+#define BOTTOM_SCORE_MIN_Y           (BOTTOM_SCORE_MAX_Y - SCORE_WID)
+#define BOTTOM_SCORE_MAX_Y           ARENA_MAX_Y
 
 /* Amount of allowable space for collisions with the sides of paddles */
 #define WIGGLE_ROOM                  2
@@ -96,9 +110,6 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
     #define JOYSTICK_BIAS 1
 #endif
 
-
-//TOP=BLUE=HOST
-//BUTTOM=RED=CLIENT
 /* Enums for player colors */
 typedef enum
 {
@@ -306,6 +317,16 @@ void UpdatePlayerOnScreen(PrevPlayer_t * prevPlayerIn, GeneralPlayerInfo_t * out
  * Function updates ball position on screen
  */
 void UpdateBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall, uint16_t outColor);
+
+/*
+ * Function updates overall scores
+ */
+void UpdateOverallScore();
+
+/*
+ * Function updates LED scores
+ */
+void UpdateLEDScore();
 
 /*
  * Initializes and prints initial game state
