@@ -11,6 +11,7 @@
 /*********************************************** Includes ********************************************************************/
 #include <stdbool.h>
 #include <stdint.h>
+#include <math.h>
 #include "G8RTOS/G8RTOS.h"
 #include "cc3100_usage.h"
 #include "LCDLib.h"
@@ -187,6 +188,7 @@ typedef struct
 {
     int16_t CenterX;
     int16_t CenterY;
+    bool alive;
 }PrevBall_t;
 
 /*
@@ -314,9 +316,20 @@ void DrawPlayer(GeneralPlayerInfo_t * player);
 void UpdatePlayerOnScreen(PrevPlayer_t * prevPlayerIn, GeneralPlayerInfo_t * outPlayer);
 
 /*
+ * Draw a new ball on screen
+ */
+void DrawBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall);
+
+/*
+ * Delete a dead ball on screen
+ */
+void DeleteBallOnScreen(PrevBall_t * previousBall);
+
+/*
  * Function updates ball position on screen
  */
-void UpdateBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall, uint16_t outColor);
+// Note: I commented out the outColor variable because I could not find any use of it
+void UpdateBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall/*, uint16_t outColor */);
 
 /*
  * Function updates overall scores

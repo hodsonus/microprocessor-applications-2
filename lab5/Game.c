@@ -48,15 +48,16 @@ void JoinGame()
     G8RTOS_SignalSemaphore(&GameState_Mutex);
 
     // TODO - If you've joined the game, acknowledge you've joined to the host and show connection with an LED
-    if(gameState.player.joined==1){
+    if(tempGameState.player.joined==1){
         //update local client info
         G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-        clientInfo=gameState.player;
+        clientInfo=tempGameState.player;
         clientInfo.acknowledge=1;
+        tempClientInfo=clientInfo;
         G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
         //send acknowledgment
         G8RTOS_WaitSemaphore(&WiFi_Mutex);
-        SendData((uint8_t*)(&clientInfo), HOST_IP_ADDR, sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t));
+        SendData((uint8_t*)(&tempClientInfo), HOST_IP_ADDR, sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t));
         G8RTOS_SignalSemaphore(&WiFi_Mutex);
         //Update LED to show connection
         // Blue LED = Connection Established
@@ -112,7 +113,7 @@ void ReceiveDataFromHost()
        G8RTOS_SignalSemaphore(&GameState_Mutex);
 
        // TODO - If the game is done, add EndOfGameClient thread with the highest priority
-       if(gameState.gameDone==1){
+       if(tempGameState.gameDone==1){
            G8RTOS_AddThread(&EndOfGameClient, 0, "End Client");
        }
 
@@ -136,7 +137,7 @@ void SendDataToHost()
 
         // Send data
         G8RTOS_WaitSemaphore(&WiFi_Mutex);
-        SendData((uint8_t*)(&clientInfo), HOST_IP_ADDR, sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t));
+        SendData((uint8_t*)(&tempClientInfo), HOST_IP_ADDR, sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t));
         G8RTOS_SignalSemaphore(&WiFi_Mutex);
 
         // Sleep for 2ms
@@ -189,6 +190,7 @@ void EndOfGameClient()
     G8RTOS_InitSemaphore(&SpecificPlayerInfo_Mutex, 1);
     G8RTOS_InitSemaphore(&GameState_Mutex, 1);
 
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
     // TODO - Clear screen with winner's color
     if(gameState.winner==TOP){
         LCD_Clear(PLAYER_BLUE);
@@ -196,6 +198,7 @@ void EndOfGameClient()
     else{
         LCD_Clear(PLAYER_RED);
     }
+    G8RTOS_SignalSemaphore(&LCD_Mutex);
 
     // TODO - Wait for host to restart game
     while(gameState.gameDone==1){
@@ -212,7 +215,7 @@ void EndOfGameClient()
 
     // TODO - Add all threads back and restart game variables
     // TODO - Initialize the board state
-
+    InitBoardState();
 
     // Add client and common threads
     // TODO - determine priorities
@@ -411,10 +414,38 @@ void DrawObjects()
 
     while (1)
     {
+        GameState_t tempGameState;
+        G8RTOS_WaitSemaphore(&GameState_Mutex);
+        tempGameState=gameState;
+        G8RTOS_SignalSemaphore(&GameState_Mutex);
         // TODO - Draw and/or update balls (you'll need a way to tell whether to draw a new ball, or update its position (i.e. if a new ball has just been created - hence the alive attribute in the Ball_t struct.
+        for(int i=0; i<MAX_NUM_OF_BALLS; i++){
+            if(prevBalls[i].alive==0){
+                // dead ball become alive, draw new ball
+                if(tempGameState.balls[i].alive==1){
+                    DrawBallOnScreen(&(prevBalls[i]), &(tempGameState.balls[i]));
+                }
+                // dead ball is still dead, nothing happens
+                else{
 
+                }
+            }
+            else{
+                // alive ball is still alive, update ball
+                if(tempGameState.balls[i].alive==1){
+                    UpdateBallOnScreen(&(prevBalls[i]), &(tempGameState.balls[i]));
+                }
+                // alive ball is dead, erase the ball
+                else{
+                    DeleteBallOnScreen(&(prevBalls[i]));
+                }
+            }
+            prevBalls[i].alive=tempGameState.balls[i].alive;
+        }
         // TODO - Update players
-
+        for(int i=0; i<MAX_NUM_OF_PLAYERS; i++){
+            UpdatePlayerOnScreen(&prevPlayers[i], &(tempGameState.players[i]));
+        }
         // Sleep for 20ms (reasonable refresh rate)
         G8RTOS_Sleep(20);
     }
@@ -428,8 +459,10 @@ void MoveLEDs()
     while(1)
     {
         // TODO - Responsible for updating the LED array with current scores
-
+        UpdateLEDScore();
         // TODO - Sleep for ???
+        // 20ms should be enough, just keep the refresh rate the same as the screen
+        G8RTOS_Sleep(20);
     }
 }
 
@@ -452,7 +485,9 @@ void HostVsClient()
     if (role == Client) G8RTOS_AddThread(&JoinGame, 0, "join");
     else G8RTOS_AddThread(&CreateGame, 0, "create");
 
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
     LCD_Clear(BACK_COLOR);
+    G8RTOS_SignalSemaphore(&LCD_Mutex);
 
     G8RTOS_KillSelf();
 }
@@ -510,11 +545,11 @@ playerType GetPlayerRole()
 void DrawPlayer(GeneralPlayerInfo_t * player)
 {
    // TODO
-
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Bottom player
     if((player->position)==BOTTOM){
-        LCD_DrawRectangle(player->currentCenter-PADDLE_LEN_D2,
-                          player->currentCenter+PADDLE_LEN_D2,
+        LCD_DrawRectangle(player->currentCenter - PADDLE_LEN_D2,
+                          player->currentCenter + PADDLE_LEN_D2,
                           BOTTOM_PADDLE_EDGE,
                           ARENA_MAX_Y,
                           player->color
@@ -522,30 +557,159 @@ void DrawPlayer(GeneralPlayerInfo_t * player)
     }
     // Top player
     else{
-        LCD_DrawRectangle(player->currentCenter-PADDLE_LEN_D2,
-                          player->currentCenter+PADDLE_LEN_D2,
+        LCD_DrawRectangle(player->currentCenter - PADDLE_LEN_D2,
+                          player->currentCenter + PADDLE_LEN_D2,
                           ARENA_MIN_Y,
                           TOP_PADDLE_EDGE,
                           player->color
         );
     }
+    G8RTOS_SignalSemaphore(&LCD_Mutex);
 }
 
 /*
  * Updates player's paddle based on current and new center
+ * (Only redraw the entire paddle when necessary)
  */
 void UpdatePlayerOnScreen(PrevPlayer_t * prevPlayerIn, GeneralPlayerInfo_t * outPlayer)
 {
    // TODO
+    int16_t displacement=outPlayer->currentCenter - prevPlayerIn->Center;
 
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
+    //need to redraw the entire paddle
+    if(abs(displacement)>=PADDLE_LEN){
+        // Bottom player
+        if((outPlayer->position)==BOTTOM){
+            LCD_DrawRectangle(prevPlayerIn->Center - PADDLE_LEN_D2,
+                              prevPlayerIn->Center + PADDLE_LEN_D2,
+                              BOTTOM_PADDLE_EDGE,
+                              ARENA_MAX_Y,
+                              BACK_COLOR
+            );
+            LCD_DrawRectangle(outPlayer->currentCenter - PADDLE_LEN_D2,
+                              outPlayer->currentCenter + PADDLE_LEN_D2,
+                              BOTTOM_PADDLE_EDGE,
+                              ARENA_MAX_Y,
+                              outPlayer->color
+            );
+        }
+        // Top player
+        else{
+            LCD_DrawRectangle(prevPlayerIn->Center - PADDLE_LEN_D2,
+                              prevPlayerIn->Center + PADDLE_LEN_D2,
+                              ARENA_MIN_Y,
+                              TOP_PADDLE_EDGE,
+                              BACK_COLOR
+            );
+            LCD_DrawRectangle(outPlayer->currentCenter - PADDLE_LEN_D2,
+                              outPlayer->currentCenter + PADDLE_LEN_D2,
+                              ARENA_MIN_Y,
+                              TOP_PADDLE_EDGE,
+                              outPlayer->color
+            );
+        }
+    }
+    // only need to partially update
+    else{
+        // calculate area need to modify
+        int16_t deleteL, deleteR, drawL, drawR;
+        // move left
+        if(displacement<=0){
+            deleteR=prevPlayerIn->Center + PADDLE_LEN_D2;
+            deleteL=deleteR + displacement;
+            drawR=prevPlayerIn->Center - PADDLE_LEN_D2;
+            drawL=drawR + displacement;
+        }
+        // move right
+        else{
+            deleteL=prevPlayerIn->Center - PADDLE_LEN_D2;
+            deleteR=deleteL + displacement;
+            drawL=prevPlayerIn->Center + PADDLE_LEN_D2;
+            drawR=drawL + displacement;
+        }
+
+        // modify area
+        // Bottom player
+        if((outPlayer->position)==BOTTOM){
+            LCD_DrawRectangle(deleteL,
+                              deleteR,
+                              BOTTOM_PADDLE_EDGE,
+                              ARENA_MAX_Y,
+                              BACK_COLOR
+            );
+            LCD_DrawRectangle(drawL,
+                              drawR,
+                              BOTTOM_PADDLE_EDGE,
+                              ARENA_MAX_Y,
+                              outPlayer->color
+            );
+        }
+        // Top player
+        else{
+            LCD_DrawRectangle(deleteL,
+                              deleteR,
+                              ARENA_MIN_Y,
+                              TOP_PADDLE_EDGE,
+                              BACK_COLOR
+            );
+            LCD_DrawRectangle(drawL,
+                              drawR,
+                              ARENA_MIN_Y,
+                              TOP_PADDLE_EDGE,
+                              outPlayer->color
+            );
+        }
+    }
+    G8RTOS_SignalSemaphore(&LCD_Mutex);
+
+    prevPlayerIn->Center=outPlayer->currentCenter;
+}
+
+/*
+ * Draw a new ball on screen
+ */
+void DrawBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall){
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
+    // Draw the new ball
+    LCD_DrawRectangle(currentBall->currentCenterX - BALL_SIZE_D2,
+                      currentBall->currentCenterX + BALL_SIZE_D2,
+                      currentBall->currentCenterX - BALL_SIZE_D2,
+                      currentBall->currentCenterX + BALL_SIZE_D2,
+                      currentBall->color
+    );
+    G8RTOS_SignalSemaphore(&LCD_Mutex);
+
+    previousBall->CenterX=currentBall->currentCenterX;
+    previousBall->CenterY=currentBall->currentCenterY;
+}
+
+/*
+ * Delete a dead ball on screen
+ */
+void DeleteBallOnScreen(PrevBall_t * previousBall){
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
+    // Delete the old ball
+    LCD_DrawRectangle(previousBall->CenterX - BALL_SIZE_D2,
+                      previousBall->CenterX + BALL_SIZE_D2,
+                      previousBall->CenterY - BALL_SIZE_D2,
+                      previousBall->CenterY + BALL_SIZE_D2,
+                      BACK_COLOR
+    );
+    G8RTOS_SignalSemaphore(&LCD_Mutex);
 }
 
 /*
  * Function updates ball position on screen
  */
-void UpdateBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall, uint16_t outColor)
+// Note: I commented out the outColor variable because I could not find any use of it
+void UpdateBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall/*, uint16_t outColor */)
 {
    // TODO
+    // Delete the old ball
+    DeleteBallOnScreen(previousBall);
+    // Draw the new ball
+    DrawBallOnScreen(previousBall, currentBall);
 }
 
 /*
@@ -610,6 +774,7 @@ void UpdateLEDScore(){
 void InitBoardState()
 {
    // TODO
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Clear background
     LCD_Clear(BACK_COLOR);
 
@@ -618,6 +783,8 @@ void InitBoardState()
         LCD_SetPoint(ARENA_MIN_X, i, LCD_WHITE);
         LCD_SetPoint(ARENA_MAX_X, i, LCD_WHITE);
     }
+    G8RTOS_SignalSemaphore(&LCD_Mutex);
+
     // Draw player paddles
     DrawPlayer(&(gameState.players[0]));
     DrawPlayer(&(gameState.players[1]));
