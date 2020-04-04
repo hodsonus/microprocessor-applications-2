@@ -19,6 +19,7 @@
 /*********************************************** Externs ********************************************************************/
 
 /* Semaphores here */ 
+semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameState_Mutex;
 
 /*********************************************** Externs ********************************************************************/
 
@@ -87,6 +88,17 @@
 #define BLUE_LED BIT2
 #define RED_LED BIT0
 
+/* Joystick Bias */
+#define John
+#ifdef John
+    #define JOYSTICK_BIAS 0
+#else
+    #define JOYSTICK_BIAS 1
+#endif
+
+
+//TOP=BLUE=HOST
+//BUTTOM=RED=CLIENT
 /* Enums for player colors */
 typedef enum
 {
@@ -175,6 +187,12 @@ typedef struct
 }PrevPlayer_t;
 /*********************************************** Data Structures ********************************************************************/
 
+/*********************************************** Global Variables ********************************************************************/
+SpecificPlayerInfo_t clientInfo;
+GameState_t gameState;
+PrevBall_t prevBalls[MAX_NUM_OF_BALLS];
+PrevPlayer_t prevPlayers[MAX_NUM_OF_PLAYERS];
+/*********************************************** Global Variables ********************************************************************/
 
 /*********************************************** Client Threads *********************************************************************/
 /*

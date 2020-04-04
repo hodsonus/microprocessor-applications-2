@@ -1,3 +1,10 @@
+/*
+ * Places need to change name for different configuration:
+ *      Game.h
+ *      sl_common.h
+ *      cc3100_usage.h
+ */
+
 #include <stdlib.h>
 #include <time.h>
 #include "G8RTOS/G8RTOS.h"
