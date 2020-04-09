@@ -55,9 +55,9 @@ void JoinGame()
     {
         // Update local client info
         G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-        clientInfo=tempGameState.player;
-        clientInfo.acknowledge=1;
-        tempClientInfo=clientInfo;
+        clientInfo = tempGameState.player;
+        clientInfo.acknowledge = 1;
+        tempClientInfo = clientInfo;
         G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
         // Send acknowledgment
@@ -168,7 +168,7 @@ void ReadJoystickClient()
 
        // Add Displacement to Self accordingly
        G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-       clientInfo.displacement = js_x_data;
+       clientInfo.displacement = js_x_data;
        G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
        // Sleep 10ms
@@ -200,7 +200,7 @@ void EndOfGameClient()
 
     // Clear screen with winner's color
     G8RTOS_WaitSemaphore(&LCD_Mutex);
-    if(gameState.winner == TOP)
+    if (gameState.winner == TOP)
     {
         LCD_Clear(PLAYER_BLUE);
     }
@@ -353,7 +353,7 @@ void ReadJoystickHost()
         // TODO - Change Self.displacement accordingly (you can experiment with how much you want to scale the ADC value)
         // Add Displacement to Self accordingly
         G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-        clientInfo.displacement = js_x_data;
+        clientInfo.displacement = js_x_data;
         G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
         // Sleep for 10ms
@@ -571,11 +571,12 @@ playerType GetPlayerRole()
 /*
  * Draw players given center X center coordinate
  */
-void DrawPlayer(GeneralPlayerInfo_t * player)
+void DrawPlayer(GeneralPlayerInfo_t *player)
 {
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Bottom player
-    if((player->position)==BOTTOM){
+    if(player->position == BOTTOM)
+    {
         LCD_DrawRectangle(player->currentCenter - PADDLE_LEN_D2,
                           player->currentCenter + PADDLE_LEN_D2,
                           BOTTOM_PADDLE_EDGE,
@@ -584,7 +585,8 @@ void DrawPlayer(GeneralPlayerInfo_t * player)
         );
     }
     // Top player
-    else{
+    else
+    {
         LCD_DrawRectangle(player->currentCenter - PADDLE_LEN_D2,
                           player->currentCenter + PADDLE_LEN_D2,
                           ARENA_MIN_Y,
@@ -716,8 +718,8 @@ void DrawBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall)
     );
     G8RTOS_SignalSemaphore(&LCD_Mutex);
 
-    previousBall->CenterX=currentBall->currentCenterX;
-    previousBall->CenterY=currentBall->currentCenterY;
+    previousBall->CenterX = currentBall->currentCenterX;
+    previousBall->CenterY = currentBall->currentCenterY;
 }
 
 /*
@@ -786,10 +788,10 @@ void UpdateOverallScore()
  */
 void UpdateLEDScore()
 {
-    uint16_t player0LEDScore=0;
-    uint16_t player1LEDScore=0;
+    uint16_t player0LEDScore = 0;
+    uint16_t player1LEDScore = 0;
     for(int i = 0; i < gameState.LEDScores[0]; i++) player0LEDScore |= (1<<i);
-    for(int i = 0; i<gameState.LEDScores[1]; i++) player1LEDScore |= (1<<i);
+    for(int i = 0; i < gameState.LEDScores[1]; i++) player1LEDScore |= (1<<i);
 
     G8RTOS_WaitSemaphore(&LED_Mutex);
     // Clear LED scores

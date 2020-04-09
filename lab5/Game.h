@@ -108,14 +108,14 @@ typedef enum
 {
     PLAYER_RED = LCD_RED,
     PLAYER_BLUE = LCD_BLUE
-}playerColor;
+} playerColor;
 
 /* Enums for player numbers */
 typedef enum
 {
     BOTTOM = 0,
     TOP = 1
-}playerPosition;
+} playerPosition;
 
 /*********************************************** Global Defines ********************************************************************/
 
