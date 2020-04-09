@@ -19,101 +19,100 @@
 
 /*********************************************** Externs ********************************************************************/
 
-/* Semaphores here */ 
 semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameState_Mutex;
 
 /*********************************************** Externs ********************************************************************/
 
 /*********************************************** Global Defines ********************************************************************/
-#define MAX_NUM_OF_PLAYERS  2
-#define MAX_NUM_OF_BALLS    8
+#define MAX_NUM_OF_PLAYERS          2
+#define MAX_NUM_OF_BALLS            8
 
 // This game can actually be played with 4 players... a little bit more challenging, but doable! 
-#define NUM_OF_PLAYERS_PLAYING 2
+#define NUM_OF_PLAYERS_PLAYING      2
 
 /* Size of game arena */
-#define ARENA_MIN_X                  40
-#define ARENA_MAX_X                  280
-#define ARENA_MIN_Y                  0
-#define ARENA_MAX_Y                  240
+#define ARENA_MIN_X                 40
+#define ARENA_MAX_X                 280
+#define ARENA_MIN_Y                 0
+#define ARENA_MAX_Y                 240
 
 /* Size of objects */
 /* Note: LEN is always X-coordinate, WID is alway Y-coordinate */
-#define PADDLE_LEN                   64
-#define PADDLE_LEN_D2                (PADDLE_LEN >> 1)
-#define PADDLE_WID                   4
-#define PADDLE_WID_D2                (PADDLE_WID >> 1)
-#define BALL_SIZE                    4
-#define BALL_SIZE_D2                 (BALL_SIZE >> 1)
-#define SCORE_LEN                    8
-#define SCORE_WID                    16
+#define PADDLE_LEN                  64
+#define PADDLE_LEN_D2               (PADDLE_LEN >> 1)
+#define PADDLE_WID                  4
+#define PADDLE_WID_D2               (PADDLE_WID >> 1)
+#define BALL_SIZE                   4
+#define BALL_SIZE_D2                (BALL_SIZE >> 1)
+#define SCORE_LEN                   8
+#define SCORE_WID                   16
 
 /* Centers for paddles at the center of the sides */
-#define PADDLE_X_CENTER              (MAX_SCREEN_X >> 1)
+#define PADDLE_X_CENTER             (MAX_SCREEN_X >> 1)
 
 /* Edge limitations for player's center coordinate */
-#define HORIZ_CENTER_MAX_PL          (ARENA_MAX_X - PADDLE_LEN_D2)
-#define HORIZ_CENTER_MIN_PL          (ARENA_MIN_X + PADDLE_LEN_D2)
+#define HORIZ_CENTER_MAX_PL         (ARENA_MAX_X - PADDLE_LEN_D2)
+#define HORIZ_CENTER_MIN_PL         (ARENA_MIN_X + PADDLE_LEN_D2)
 
 /* Constant enters of each player */
-#define TOP_PLAYER_CENTER_Y          (ARENA_MIN_Y + PADDLE_WID_D2)
-#define BOTTOM_PLAYER_CENTER_Y       (ARENA_MAX_Y - PADDLE_WID_D2)
+#define TOP_PLAYER_CENTER_Y         (ARENA_MIN_Y + PADDLE_WID_D2)
+#define BOTTOM_PLAYER_CENTER_Y      (ARENA_MAX_Y - PADDLE_WID_D2)
 
 /* Edge coordinates for paddles */
-#define TOP_PADDLE_EDGE              (ARENA_MIN_Y + PADDLE_WID)
-#define BOTTOM_PADDLE_EDGE           (ARENA_MAX_Y - PADDLE_WID)
+#define TOP_PADDLE_EDGE             (ARENA_MIN_Y + PADDLE_WID)
+#define BOTTOM_PADDLE_EDGE          (ARENA_MAX_Y - PADDLE_WID)
 
 /* Edge coordinates for the scores */
-#define TOP_SCORE_MIN_X              (TOP_SCORE_MAX_X - SCORE_LEN)
-#define TOP_SCORE_MAX_X              (ARENA_MIN_X - 1)
-#define TOP_SCORE_MIN_Y              ARENA_MIN_Y
-#define TOP_SCORE_MAX_Y              (TOP_SCORE_MIN_Y + SCORE_WID)
+#define TOP_SCORE_MIN_X             (TOP_SCORE_MAX_X - SCORE_LEN)
+#define TOP_SCORE_MAX_X             (ARENA_MIN_X - 1)
+#define TOP_SCORE_MIN_Y             ARENA_MIN_Y
+#define TOP_SCORE_MAX_Y             (TOP_SCORE_MIN_Y + SCORE_WID)
 
-#define BOTTOM_SCORE_MIN_X           (BOTTOM_SCORE_MAX_X - SCORE_LEN)
-#define BOTTOM_SCORE_MAX_X           (ARENA_MIN_X - 1)
-#define BOTTOM_SCORE_MIN_Y           (BOTTOM_SCORE_MAX_Y - SCORE_WID)
-#define BOTTOM_SCORE_MAX_Y           ARENA_MAX_Y
+#define BOTTOM_SCORE_MIN_X          (BOTTOM_SCORE_MAX_X - SCORE_LEN)
+#define BOTTOM_SCORE_MAX_X          (ARENA_MIN_X - 1)
+#define BOTTOM_SCORE_MIN_Y          (BOTTOM_SCORE_MAX_Y - SCORE_WID)
+#define BOTTOM_SCORE_MAX_Y          ARENA_MAX_Y
 
 /* Amount of allowable space for collisions with the sides of paddles */
-#define WIGGLE_ROOM                  2
+#define WIGGLE_ROOM                 2
 
 /* Value for velocities from contact with paddles */
-#define _1_3_PADDLE                  11
+#define _1_3_PADDLE                 11
 
 /* Defines for Minkowski Alg. for collision */
-#define WIDTH_TOP_OR_BOTTOM          ((PADDLE_LEN + BALL_SIZE) >> 1) + WIGGLE_ROOM
-#define HEIGHT_TOP_OR_BOTTOM         ((PADDLE_WID + BALL_SIZE) >> 1) + WIGGLE_ROOM
+#define WIDTH_TOP_OR_BOTTOM         ((PADDLE_LEN + BALL_SIZE) >> 1) + WIGGLE_ROOM
+#define HEIGHT_TOP_OR_BOTTOM        ((PADDLE_WID + BALL_SIZE) >> 1) + WIGGLE_ROOM
 
 /* Edge limitations for ball's center coordinate */
-#define HORIZ_CENTER_MAX_BALL        (ARENA_MAX_X - BALL_SIZE_D2)
-#define HORIZ_CENTER_MIN_BALL        (ARENA_MIN_X + BALL_SIZE_D2)
-#define VERT_CENTER_MAX_BALL         (ARENA_MAX_Y - BALL_SIZE_D2)
-#define VERT_CENTER_MIN_BALL         (ARENA_MIN_Y + BALL_SIZE_D2)
+#define HORIZ_CENTER_MAX_BALL       (ARENA_MAX_X - BALL_SIZE_D2)
+#define HORIZ_CENTER_MIN_BALL       (ARENA_MIN_X + BALL_SIZE_D2)
+#define VERT_CENTER_MAX_BALL        (ARENA_MAX_Y - BALL_SIZE_D2)
+#define VERT_CENTER_MIN_BALL        (ARENA_MIN_Y + BALL_SIZE_D2)
 
 /* Maximum ball speed */
-#define MAX_BALL_SPEED               6
+#define MAX_BALL_SPEED              6
 
 /* Background color - Black */
-#define BACK_COLOR                   LCD_BLACK
+#define BACK_COLOR                  LCD_BLACK
 
 /* Offset for printing player to avoid blips from left behind ball */
 #define PRINT_OFFSET                10
 
 /* Used as status LEDs for Wi-Fi */
-#define BLUE_LED BIT2
-#define RED_LED BIT0
+#define BLUE_LED                    BIT2
+#define RED_LED                     BIT0
 
 /* Used in place of raw numbers for ease and consistency of changes. */
-#define MAX_PRIO 0
-#define MIN_PRIO 255
+#define MAX_PRIO                    0
+#define MIN_PRIO                    255
 /* TODO - determine what the below thread priorities should be. */
-#define MOVEBALL_PRIO 50
-#define GENBALL_PRIO 50
-#define DRAWOBJ_PRIO 50
-#define JOYSTICK_PRIO 50
-#define SENDDATA_PRIO 50
-#define RECEIVEDATA_PRIO 50
-#define MOVELED_PRIO 50
+#define MOVEBALL_PRIO               50
+#define GENBALL_PRIO                50
+#define DRAWOBJ_PRIO                50
+#define JOYSTICK_PRIO               50
+#define SENDDATA_PRIO               50
+#define RECEIVEDATA_PRIO            50
+#define MOVELED_PRIO                50
 
 /* Enums for player colors */
 typedef enum
@@ -180,8 +179,8 @@ typedef struct
     uint16_t numberOfBalls;
     bool winner;
     bool gameDone;
-    uint8_t LEDScores[2];
-    uint8_t overallScores[2];
+    uint8_t LEDScores[MAX_NUM_OF_PLAYERS];
+    uint8_t overallScores[MAX_NUM_OF_PLAYERS];
 } GameState_t;
 #pragma pack ( pop )
 
@@ -193,7 +192,7 @@ typedef struct
     int16_t CenterX;
     int16_t CenterY;
     bool alive;
-}PrevBall_t;
+} PrevBall_t;
 
 /*
  * Struct of all the previous players locations, only changed by self for drawing
@@ -201,7 +200,7 @@ typedef struct
 typedef struct
 {
     int16_t Center;
-}PrevPlayer_t;
+} PrevPlayer_t;
 /*********************************************** Data Structures ********************************************************************/
 
 /*********************************************** Global Variables ********************************************************************/

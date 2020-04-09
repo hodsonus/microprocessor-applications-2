@@ -195,14 +195,8 @@ void EndOfGameClient()
 
     // Clear screen with winner's color
     G8RTOS_WaitSemaphore(&LCD_Mutex);
-    if (gameState.winner == TOP)
-    {
-        LCD_Clear(PLAYER_BLUE);
-    }
-    else
-    {
-        LCD_Clear(PLAYER_RED);
-    }
+    if (gameState.winner == TOP) LCD_Clear(PLAYER_BLUE);
+    else LCD_Clear(PLAYER_RED);
     G8RTOS_SignalSemaphore(&LCD_Mutex);
 
     // Wait for host to restart game
