@@ -50,13 +50,12 @@ void JoinGame()
     G8RTOS_SignalSemaphore(&GameState_Mutex);
 
     // If you've joined the game, acknowledge you've joined to the host and show connection with an LED
-    // TODO - Shida, I don't understand this logic here to add the hsotvsclient thread if player.joined != 1
-    if (tempGameState.player.acknowledge == 1)
+    if (tempGameState.player.acknowledge)
     {
         // Update local client info
         G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-        clientInfo.acknowledge = 1;
-        clientInfo.joined=1;
+        clientInfo.acknowledge = true;
+        clientInfo.joined = true;
         tempClientInfo = clientInfo;
         G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
@@ -74,8 +73,8 @@ void JoinGame()
     }
     else
     {
-        // TODO - decide what to do here
         G8RTOS_AddThread(&HostVsClient, 0, "host vs client");
+        G8RTOS_KillSelf();
     }
 
     // Initialize the board state
@@ -121,7 +120,7 @@ void ReceiveDataFromHost()
        G8RTOS_SignalSemaphore(&GameState_Mutex);
 
        // If the game is done, add EndOfGameClient thread with the highest priority
-       if (tempGameState.gameDone == 1) G8RTOS_AddThread(&EndOfGameClient, 0, "End Client");
+       if (tempGameState.gameDone) G8RTOS_AddThread(&EndOfGameClient, 0, "End Client");
 
        // Sleep for 5ms
        G8RTOS_Sleep(5);
@@ -212,7 +211,7 @@ void EndOfGameClient()
     G8RTOS_SignalSemaphore(&LCD_Mutex);
 
     // Wait for host to restart game
-    while (gameState.gameDone == 1)
+    while (gameState.gameDone)
     {
         // Wait for server response
         GameState_t tempGameState;
