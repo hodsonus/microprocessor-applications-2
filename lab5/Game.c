@@ -18,59 +18,66 @@ void JoinGame()
     LP3943_LedModeSet(RED, RED_LED);
     G8RTOS_SignalSemaphore(&LED_Mutex);
 
-    // TODO - Set initial SpecificPlayerInfo_t strict attributes (you can get the IP address by calling getLocalIP()
-    SpecificPlayerInfo_t tempClientInfo={
-                CONFIG_IP,     //IP Address
-                0,             //displacement
-                BOTTOM,        //playerNumber
-                1,             //ready
-                0,             //joined
-                0              //acknowledge
+    // Set initial SpecificPlayerInfo_t strict attributes (you can get the IP address by calling getLocalIP()
+    SpecificPlayerInfo_t tempClientInfo = {
+                CONFIG_IP,     // IP Address
+                0,             // displacement
+                BOTTOM,        // playerNumber
+                1,             // ready
+                0,             // joined
+                0              // acknowledge
     };
+
+    // Empty client info packet
     G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-    clientInfo=tempClientInfo;
+    clientInfo = tempClientInfo;
     G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
-    // TODO - Send player info to the host
+    // Send player info to the host
     G8RTOS_WaitSemaphore(&WiFi_Mutex);
     SendData((uint8_t*)(&clientInfo), HOST_IP_ADDR, sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t));
     G8RTOS_SignalSemaphore(&WiFi_Mutex);
 
-    // TODO - Wait for server response
+    // Wait for server response
     GameState_t tempGameState;
     G8RTOS_WaitSemaphore(&WiFi_Mutex);
-    while(ReceiveData((uint8_t*)(&tempGameState), sizeof(GameState_t)/sizeof(uint8_t))==NOTHING_RECEIVED);
+    while( ReceiveData((uint8_t*)(&tempGameState), sizeof(GameState_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
     G8RTOS_SignalSemaphore(&WiFi_Mutex);
 
-    // TODO - Empty the received packet
+    // Empty the received packet
     G8RTOS_WaitSemaphore(&GameState_Mutex);
-    gameState=tempGameState;
+    gameState = tempGameState;
     G8RTOS_SignalSemaphore(&GameState_Mutex);
 
-    // TODO - If you've joined the game, acknowledge you've joined to the host and show connection with an LED
-    if(tempGameState.player.joined==1){
-        //update local client info
+    // If you've joined the game, acknowledge you've joined to the host and show connection with an LED
+    // TODO - Shida, I don't understand this logic here to add the hsotvsclient thread if player.joined != 1
+    if (tempGameState.player.joined == 1)
+    {
+        // Update local client info
         G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
         clientInfo=tempGameState.player;
         clientInfo.acknowledge=1;
         tempClientInfo=clientInfo;
         G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
-        //send acknowledgment
+
+        // Send acknowledgment
         G8RTOS_WaitSemaphore(&WiFi_Mutex);
         SendData((uint8_t*)(&tempClientInfo), HOST_IP_ADDR, sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t));
         G8RTOS_SignalSemaphore(&WiFi_Mutex);
-        //Update LED to show connection
+
+        // Update LED to show connection
         // Blue LED = Connection Established
         G8RTOS_WaitSemaphore(&LED_Mutex);
         LP3943_LedModeSet(RED, 0);
         LP3943_LedModeSet(BLUE, BLUE_LED);
         G8RTOS_SignalSemaphore(&LED_Mutex);
     }
-    else{
+    else
+    {
         G8RTOS_AddThread(&HostVsClient, 0, "host vs client");
     }
 
-    // TODO - Initialize the board state
+    // Initialize the board state
     InitBoardState();
 
     // Add client and common threads
@@ -93,29 +100,27 @@ void ReceiveDataFromHost()
 {
    while (1)
    {
-       // TODO - Continually receive data until a return value greater than zero is returned (meaning valid data has been read)
+       // Continually receive data until a return value greater than zero is returned (meaning valid data has been read)
        // Note: Remember to release and take the semaphore again so you've still able to send data
        GameState_t tempGameState;
-       while(1){
+       _i32 retVal = NOTHING_RECEIVED;
+       while(retVal != SUCCESS)
+       {
            G8RTOS_WaitSemaphore(&WiFi_Mutex);
-           _i32 retVal=ReceiveData((uint8_t*)(&tempGameState), sizeof(GameState_t)/sizeof(uint8_t));
+           retVal = ReceiveData((uint8_t*)(&tempGameState), sizeof(GameState_t)/sizeof(uint8_t));
            G8RTOS_SignalSemaphore(&WiFi_Mutex);
-           if(retVal==SUCCESS){
-               break;
-           }
+
            // Sleeping here for 1ms would avoid a deadlock
            G8RTOS_Sleep(1);
        }
 
-       // TODO - Empty the received packet
+       // Empty the received packet
        G8RTOS_WaitSemaphore(&GameState_Mutex);
-       gameState=tempGameState;
+       gameState = tempGameState;
        G8RTOS_SignalSemaphore(&GameState_Mutex);
 
-       // TODO - If the game is done, add EndOfGameClient thread with the highest priority
-       if(tempGameState.gameDone==1){
-           G8RTOS_AddThread(&EndOfGameClient, 0, "End Client");
-       }
+       // If the game is done, add EndOfGameClient thread with the highest priority
+       if (tempGameState.gameDone == 1) G8RTOS_AddThread(&EndOfGameClient, 0, "End Client");
 
        // Sleep for 5ms
        G8RTOS_Sleep(5);
@@ -129,13 +134,12 @@ void SendDataToHost()
 {
     while (1)
     {
-        // TODO - Send player info
         // Get player info
         G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-        SpecificPlayerInfo_t tempClientInfo=clientInfo;
+        SpecificPlayerInfo_t tempClientInfo = clientInfo;
         G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
-        // Send data
+        // Send player info
         G8RTOS_WaitSemaphore(&WiFi_Mutex);
         SendData((uint8_t*)(&tempClientInfo), HOST_IP_ADDR, sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t));
         G8RTOS_SignalSemaphore(&WiFi_Mutex);
@@ -150,17 +154,21 @@ void SendDataToHost()
  */
 void ReadJoystickClient()
 {
-   // TODO - Determine joystick bias (found experimentally) since every joystick is offset by some small amount displacement and noise
+    s16 js_x_bias, js_y_bias, js_x_data, js_y_data;
+
+    // Determine joystick bias (found experimentally) since every joystick is offset by some small amount displacement and noise
+    GetJoystickCoordinates(&js_x_bias, &js_y_bias);
 
    while (1)
    {
-       // TODO - Read joystick and add bias
-       s16 js_x_data, js_y_data;
+       // Read joystick and add bias
        GetJoystickCoordinates(&js_x_data, &js_y_data);
+       js_x_data -= js_x_bias;
+       js_y_data -= js_y_bias;
 
-       // TODO - Add Displacement to Self accordingly
+       // Add Displacement to Self accordingly
        G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-       clientInfo.displacement=js_x_data+JOYSTICK_BIAS;
+       clientInfo.displacement = js_x_data;
        G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
        // Sleep 10ms
@@ -173,7 +181,7 @@ void ReadJoystickClient()
  */
 void EndOfGameClient()
 {
-    // TODO - Wait for all semaphores to be released
+    // Wait for all semaphores to be released
     G8RTOS_WaitSemaphore(&LED_Mutex);
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     G8RTOS_WaitSemaphore(&WiFi_Mutex);
@@ -183,38 +191,43 @@ void EndOfGameClient()
     // Kill all other threads
     G8RTOS_KillAllOtherThreads();
 
-    // TODO - Re-initialize semaphores
+    // Re-initialize semaphores
     G8RTOS_InitSemaphore(&LED_Mutex, 1);
     G8RTOS_InitSemaphore(&LCD_Mutex, 1);
     G8RTOS_InitSemaphore(&WiFi_Mutex, 1);
     G8RTOS_InitSemaphore(&SpecificPlayerInfo_Mutex, 1);
     G8RTOS_InitSemaphore(&GameState_Mutex, 1);
 
+    // Clear screen with winner's color
     G8RTOS_WaitSemaphore(&LCD_Mutex);
-    // TODO - Clear screen with winner's color
-    if(gameState.winner==TOP){
+    if(gameState.winner == TOP)
+    {
         LCD_Clear(PLAYER_BLUE);
     }
-    else{
+    else
+    {
         LCD_Clear(PLAYER_RED);
     }
     G8RTOS_SignalSemaphore(&LCD_Mutex);
 
-    // TODO - Wait for host to restart game
-    while(gameState.gameDone==1){
-        // TODO - Wait for server response
+    // Wait for host to restart game
+    while (gameState.gameDone == 1)
+    {
+        // Wait for server response
         GameState_t tempGameState;
         G8RTOS_WaitSemaphore(&WiFi_Mutex);
-        while(ReceiveData((uint8_t*)(&tempGameState), sizeof(GameState_t)/sizeof(uint8_t))==NOTHING_RECEIVED);
+        while( ReceiveData((uint8_t*)(&tempGameState), sizeof(GameState_t)/sizeof(uint8_t)) == NOTHING_RECEIVED);
         G8RTOS_SignalSemaphore(&WiFi_Mutex);
-        // TODO - Empty the received packet
+
+        // Empty the received packet
         G8RTOS_WaitSemaphore(&GameState_Mutex);
         gameState=tempGameState;
         G8RTOS_SignalSemaphore(&GameState_Mutex);
     }
 
-    // TODO - Add all threads back and restart game variables
-    // TODO - Initialize the board state
+    // Add all threads back and restart game variables
+
+    // Initialize the board state
     InitBoardState();
 
     // Add client and common threads
@@ -324,13 +337,24 @@ void GenerateBall()
  */
 void ReadJoystickHost()
 {
-    // TODO - Determine joystick bias (found experimentally) since every joystick is offset by some small amount displacement and noise
+
+    s16 js_x_bias, js_y_bias, js_x_data, js_y_data;
+
+    // Determine joystick bias (found experimentally) since every joystick is offset by some small amount displacement and noise
+    GetJoystickCoordinates(&js_x_bias, &js_y_bias);
 
     while (1)
     {
-        // TODO - Read the joystick ADC values by calling GetJoystickCoordinates, applying previously determined bias
+        // Read the joystick ADC values by calling GetJoystickCoordinates, applying previously determined bias
+        GetJoystickCoordinates(&js_x_data, &js_y_data);
+        js_x_data -= js_x_bias;
+        js_y_data -= js_y_bias;
 
         // TODO - Change Self.displacement accordingly (you can experiment with how much you want to scale the ADC value)
+        // Add Displacement to Self accordingly
+        G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+        clientInfo.displacement = js_x_data;
+        G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
         // Sleep for 10ms
         G8RTOS_Sleep(10);
@@ -410,42 +434,47 @@ void IdleThread()
  */
 void DrawObjects()
 {
-    // TODO - Declare array of previous players and ball positions
-
     while (1)
     {
         GameState_t tempGameState;
         G8RTOS_WaitSemaphore(&GameState_Mutex);
-        tempGameState=gameState;
+        tempGameState = gameState;
         G8RTOS_SignalSemaphore(&GameState_Mutex);
-        // TODO - Draw and/or update balls (you'll need a way to tell whether to draw a new ball, or update its position (i.e. if a new ball has just been created - hence the alive attribute in the Ball_t struct.
-        for(int i=0; i<MAX_NUM_OF_BALLS; i++){
-            if(prevBalls[i].alive==0){
-                // dead ball become alive, draw new ball
-                if(tempGameState.balls[i].alive==1){
+
+        // Draw and/or update balls (you'll need a way to tell whether to draw a new ball, or update its position (i.e. if a new ball has just been created - hence the alive attribute in the Ball_t struct.
+        for (int i = 0; i < MAX_NUM_OF_BALLS; i++)
+        {
+            if (!prevBalls[i].alive)
+            {
+                // Dead ball became alive, should draw new ball
+                if (tempGameState.balls[i].alive)
+                {
                     DrawBallOnScreen(&(prevBalls[i]), &(tempGameState.balls[i]));
                 }
-                // dead ball is still dead, nothing happens
-                else{
-
-                }
             }
-            else{
+            else
+            {
                 // alive ball is still alive, update ball
-                if(tempGameState.balls[i].alive==1){
+                if (tempGameState.balls[i].alive)
+                {
                     UpdateBallOnScreen(&(prevBalls[i]), &(tempGameState.balls[i]));
                 }
                 // alive ball is dead, erase the ball
-                else{
+                else
+                {
                     DeleteBallOnScreen(&(prevBalls[i]));
                 }
             }
+
             prevBalls[i].alive=tempGameState.balls[i].alive;
         }
-        // TODO - Update players
-        for(int i=0; i<MAX_NUM_OF_PLAYERS; i++){
+
+        // Update players
+        for(int i = 0; i < MAX_NUM_OF_PLAYERS; ++i)
+        {
             UpdatePlayerOnScreen(&prevPlayers[i], &(tempGameState.players[i]));
         }
+
         // Sleep for 20ms (reasonable refresh rate)
         G8RTOS_Sleep(20);
     }
@@ -458,9 +487,9 @@ void MoveLEDs()
 {
     while(1)
     {
-        // TODO - Responsible for updating the LED array with current scores
+        // Responsible for updating the LED array with current scores
         UpdateLEDScore();
-        // TODO - Sleep for ???
+
         // 20ms should be enough, just keep the refresh rate the same as the screen
         G8RTOS_Sleep(20);
     }
@@ -544,7 +573,6 @@ playerType GetPlayerRole()
  */
 void DrawPlayer(GeneralPlayerInfo_t * player)
 {
-   // TODO
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Bottom player
     if((player->position)==BOTTOM){
@@ -571,16 +599,17 @@ void DrawPlayer(GeneralPlayerInfo_t * player)
  * Updates player's paddle based on current and new center
  * (Only redraw the entire paddle when necessary)
  */
-void UpdatePlayerOnScreen(PrevPlayer_t * prevPlayerIn, GeneralPlayerInfo_t * outPlayer)
+void UpdatePlayerOnScreen(PrevPlayer_t *prevPlayerIn, GeneralPlayerInfo_t *outPlayer)
 {
-   // TODO
-    int16_t displacement=outPlayer->currentCenter - prevPlayerIn->Center;
+    int16_t displacement = outPlayer->currentCenter - prevPlayerIn->Center;
 
     G8RTOS_WaitSemaphore(&LCD_Mutex);
-    //need to redraw the entire paddle
-    if(abs(displacement)>=PADDLE_LEN){
+    // If the displacement is greater than the paddle length, we need to redraw the entire paddle
+    if(abs(displacement) >= PADDLE_LEN)
+    {
         // Bottom player
-        if((outPlayer->position)==BOTTOM){
+        if(outPlayer->position == BOTTOM)
+        {
             LCD_DrawRectangle(prevPlayerIn->Center - PADDLE_LEN_D2,
                               prevPlayerIn->Center + PADDLE_LEN_D2,
                               BOTTOM_PADDLE_EDGE,
@@ -595,7 +624,8 @@ void UpdatePlayerOnScreen(PrevPlayer_t * prevPlayerIn, GeneralPlayerInfo_t * out
             );
         }
         // Top player
-        else{
+        else
+        {
             LCD_DrawRectangle(prevPlayerIn->Center - PADDLE_LEN_D2,
                               prevPlayerIn->Center + PADDLE_LEN_D2,
                               ARENA_MIN_Y,
@@ -610,28 +640,32 @@ void UpdatePlayerOnScreen(PrevPlayer_t * prevPlayerIn, GeneralPlayerInfo_t * out
             );
         }
     }
-    // only need to partially update
-    else{
-        // calculate area need to modify
+    // Else, we only need to partially update the paddle
+    else
+    {
+        // Calculate area need to modify
         int16_t deleteL, deleteR, drawL, drawR;
-        // move left
-        if(displacement<=0){
+        // Move left
+        if(displacement <= 0)
+        {
             deleteR=prevPlayerIn->Center + PADDLE_LEN_D2;
             deleteL=deleteR + displacement;
             drawR=prevPlayerIn->Center - PADDLE_LEN_D2;
             drawL=drawR + displacement;
         }
-        // move right
-        else{
+        // Move right
+        else
+        {
             deleteL=prevPlayerIn->Center - PADDLE_LEN_D2;
             deleteR=deleteL + displacement;
             drawL=prevPlayerIn->Center + PADDLE_LEN_D2;
             drawR=drawL + displacement;
         }
 
-        // modify area
+        // Modify area
         // Bottom player
-        if((outPlayer->position)==BOTTOM){
+        if(outPlayer->position == BOTTOM)
+        {
             LCD_DrawRectangle(deleteL,
                               deleteR,
                               BOTTOM_PADDLE_EDGE,
@@ -646,7 +680,8 @@ void UpdatePlayerOnScreen(PrevPlayer_t * prevPlayerIn, GeneralPlayerInfo_t * out
             );
         }
         // Top player
-        else{
+        else
+        {
             LCD_DrawRectangle(deleteL,
                               deleteR,
                               ARENA_MIN_Y,
@@ -669,7 +704,8 @@ void UpdatePlayerOnScreen(PrevPlayer_t * prevPlayerIn, GeneralPlayerInfo_t * out
 /*
  * Draw a new ball on screen
  */
-void DrawBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall){
+void DrawBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall)
+{
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Draw the new ball
     LCD_DrawRectangle(currentBall->currentCenterX - BALL_SIZE_D2,
@@ -687,7 +723,8 @@ void DrawBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall){
 /*
  * Delete a dead ball on screen
  */
-void DeleteBallOnScreen(PrevBall_t * previousBall){
+void DeleteBallOnScreen(PrevBall_t * previousBall)
+{
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Delete the old ball
     LCD_DrawRectangle(previousBall->CenterX - BALL_SIZE_D2,
@@ -703,11 +740,11 @@ void DeleteBallOnScreen(PrevBall_t * previousBall){
  * Function updates ball position on screen
  */
 // Note: I commented out the outColor variable because I could not find any use of it
-void UpdateBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall/*, uint16_t outColor */)
+void UpdateBallOnScreen(PrevBall_t *previousBall, Ball_t *currentBall/*, uint16_t outColor */)
 {
-   // TODO
     // Delete the old ball
     DeleteBallOnScreen(previousBall);
+
     // Draw the new ball
     DrawBallOnScreen(previousBall, currentBall);
 }
@@ -715,53 +752,58 @@ void UpdateBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall/*, uint1
 /*
  * Function updates overall scores
  */
-void UpdateOverallScore(){
+void UpdateOverallScore()
+{
     // Convert score to string
     char player0ScoreStr[3], player1ScoreStr[3];
     snprintf(player0ScoreStr, 3, "%02d", gameState.overallScores[0]);
     snprintf(player1ScoreStr, 3, "%02d", gameState.overallScores[1]);
 
     G8RTOS_WaitSemaphore(&LCD_Mutex);
+
     // Clear score region
     LCD_DrawRectangle(TOP_SCORE_MIN_X, TOP_SCORE_MAX_X, TOP_SCORE_MIN_Y, TOP_SCORE_MAX_Y, BACK_COLOR);
     LCD_DrawRectangle(BOTTOM_SCORE_MIN_X, BOTTOM_SCORE_MAX_X, BOTTOM_SCORE_MIN_Y, BOTTOM_SCORE_MAX_Y, BACK_COLOR);
+
     // if player0 is BOTTOM, player1 is TOP
-    if(gameState.players[0].position==BOTTOM){
+    if (gameState.players[0].position == BOTTOM)
+    {
         LCD_Text(BOTTOM_SCORE_MIN_X, BOTTOM_SCORE_MIN_Y, player0ScoreStr, gameState.players[0].color);
         LCD_Text(TOP_SCORE_MIN_X, TOP_SCORE_MIN_Y, player1ScoreStr, gameState.players[1].color);
     }
     // player0 is TOP, player1 is BUTTOM
-    else{
+    else
+    {
         LCD_Text(TOP_SCORE_MIN_X, TOP_SCORE_MIN_Y, player0ScoreStr, gameState.players[0].color);
         LCD_Text(BOTTOM_SCORE_MIN_X, BOTTOM_SCORE_MIN_Y, player1ScoreStr, gameState.players[1].color);
     }
+
     G8RTOS_SignalSemaphore(&LCD_Mutex);
 }
 
 /*
  * Function updates LED scores
  */
-void UpdateLEDScore(){
+void UpdateLEDScore()
+{
     uint16_t player0LEDScore=0;
     uint16_t player1LEDScore=0;
-    for(int i=0; i<gameState.LEDScores[0]; i++){
-        player0LEDScore|=(1<<i);
-    }
-    for(int i=0; i<gameState.LEDScores[1]; i++){
-        player1LEDScore|=(1<<i);
-    }
+    for(int i = 0; i < gameState.LEDScores[0]; i++) player0LEDScore |= (1<<i);
+    for(int i = 0; i<gameState.LEDScores[1]; i++) player1LEDScore |= (1<<i);
 
     G8RTOS_WaitSemaphore(&LED_Mutex);
-    // clear LED scores
+    // Clear LED scores
     LP3943_LedModeSet(BLUE, 0);
     LP3943_LedModeSet(RED, 0);
-    // if player0 is RED, player1 is BLUE
-    if(gameState.players[0].color==PLAYER_RED){
+    // If player0 is RED, player1 is BLUE
+    if(gameState.players[0].color == PLAYER_RED)
+    {
         LP3943_LedModeSet(RED, player0LEDScore);
         LP3943_LedModeSet(BLUE, player1LEDScore);
     }
-    // player0 is BLUE, player1 is RED
-    else{
+    // Else, player0 is BLUE, player1 is RED
+    else
+    {
         LP3943_LedModeSet(BLUE, player0LEDScore);
         LP3943_LedModeSet(RED, player1LEDScore);
     }
@@ -773,7 +815,6 @@ void UpdateLEDScore(){
  */
 void InitBoardState()
 {
-   // TODO
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Clear background
     LCD_Clear(BACK_COLOR);

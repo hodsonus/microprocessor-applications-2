@@ -103,14 +103,6 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define BLUE_LED BIT2
 #define RED_LED BIT0
 
-/* Joystick Bias */
-#define John
-#ifdef John
-    #define JOYSTICK_BIAS 0
-#else
-    #define JOYSTICK_BIAS 1
-#endif
-
 /* Enums for player colors */
 typedef enum
 {
