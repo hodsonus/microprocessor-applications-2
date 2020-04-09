@@ -73,7 +73,7 @@ void JoinGame()
     }
     else
     {
-        G8RTOS_AddThread(&HostVsClient, 0, "host vs client");
+        G8RTOS_AddThread(&HostVsClient, MAX_PRIO, "host vs client");
         G8RTOS_KillSelf();
     }
 
@@ -81,13 +81,8 @@ void JoinGame()
     InitBoardState();
 
     // Add client and common threads
-    // TODO - determine priorities
-    G8RTOS_AddThread(&ReadJoystickClient, 0, "joystick");
-    G8RTOS_AddThread(&SendDataToHost, 0, "send");
-    G8RTOS_AddThread(&ReceiveDataFromHost, 0, "receive");
-    G8RTOS_AddThread(&DrawObjects, 0, "draw");
-    G8RTOS_AddThread(&MoveLEDs, 0, "leds");
-    G8RTOS_AddThread(&IdleThread, 255, "idle");
+    AddClientGameThreads();
+    AddCommonGameThreads();
 
     // Kill self
     G8RTOS_KillSelf();
@@ -120,7 +115,7 @@ void ReceiveDataFromHost()
        G8RTOS_SignalSemaphore(&GameState_Mutex);
 
        // If the game is done, add EndOfGameClient thread with the highest priority
-       if (tempGameState.gameDone) G8RTOS_AddThread(&EndOfGameClient, 0, "End Client");
+       if (tempGameState.gameDone) G8RTOS_AddThread(&EndOfGameClient, MAX_PRIO, "End Client");
 
        // Sleep for 5ms
        G8RTOS_Sleep(5);
@@ -231,13 +226,8 @@ void EndOfGameClient()
     InitBoardState();
 
     // Add client and common threads
-    // TODO - determine priorities
-    G8RTOS_AddThread(&ReadJoystickClient, 0, "joystick");
-    G8RTOS_AddThread(&SendDataToHost, 0, "send");
-    G8RTOS_AddThread(&ReceiveDataFromHost, 0, "receive");
-    G8RTOS_AddThread(&DrawObjects, 0, "draw");
-    G8RTOS_AddThread(&MoveLEDs, 0, "leds");
-    G8RTOS_AddThread(&IdleThread, 255, "idle");
+    AddClientGameThreads();
+    AddCommonGameThreads();
 
     // Kill Self
     G8RTOS_KillSelf();
@@ -265,14 +255,8 @@ void CreateGame()
     // TODO - Initialize the board (draw arena, players, and scores)
 
     // Add host and common threads
-    // TODO - determine priorities
-    G8RTOS_AddThread(&GenerateBall, 0, "gen ball");
-    G8RTOS_AddThread(&DrawObjects, 0, "draw");
-    G8RTOS_AddThread(&ReadJoystickHost, 0, "joystick");
-    G8RTOS_AddThread(&SendDataToClient, 0, "send data");
-    G8RTOS_AddThread(&ReceiveDataFromClient, 0, "rcv data");
-    G8RTOS_AddThread(&MoveLEDs, 0, "leds");
-    G8RTOS_AddThread(&IdleThread, 255, "idle");
+    AddHostGameThreads();
+    AddCommonGameThreads();
 
     // Kill self
     G8RTOS_KillSelf();
@@ -296,10 +280,7 @@ void SendDataToClient()
         G8RTOS_SignalSemaphore(&WiFi_Mutex);
 
         // If game is done, add EndOfGameHost thread with highest priority
-        if (tempGameState.gameDone)
-        {
-            G8RTOS_AddThread(&EndOfGameHost, 0, "EOG Host");
-        }
+        if (tempGameState.gameDone) G8RTOS_AddThread(&EndOfGameHost, MAX_PRIO, "EOG Host");
 
         // Sleep for 5ms (found experimentally to be a good amount of time for synchronization)
         G8RTOS_Sleep(5);
@@ -332,11 +313,19 @@ void ReceiveDataFromClient()
  */
 void GenerateBall()
 {
+    uint16_t numBallsTemp;
+
     while (1)
     {
-        // TODO - Adds another MoveBall thread if the number of balls is less than the max
+        G8RTOS_WaitSemaphore(&GameState_Mutex);
+        numBallsTemp = gameState.numberOfBalls;
+        G8RTOS_WaitSemaphore(&GameState_Mutex);
 
-        // TODO - Sleeps proportional to the number of balls currently in play
+        // Adds another MoveBall thread if the number of balls is less than the max
+        if (numBallsTemp < MAX_NUM_OF_BALLS) G8RTOS_AddThread(&MoveBall, MOVEBALL_PRIO, "move ball");
+
+        // Sleeps proportional to the number of balls currently in play
+        G8RTOS_Sleep(1000 * numBallsTemp);
     }
 }
 
@@ -345,7 +334,6 @@ void GenerateBall()
  */
 void ReadJoystickHost()
 {
-
     s16 js_x_bias, js_y_bias, js_x_data, js_y_data;
 
     // Determine joystick bias (found experimentally) since every joystick is offset by some small amount displacement and noise
@@ -363,12 +351,11 @@ void ReadJoystickHost()
         gameState.player.displacement = js_x_data;
         G8RTOS_SignalSemaphore(&GameState_Mutex);
 
-        // Sleep for 10ms
+        // Sleep for 10ms, by sleeping before updating the bottom player's position, it makes the game more fair between client and host
         G8RTOS_Sleep(10);
 
-        // TODO - Then add the displacement to the bottom player in the list of players (general list that鈥檚 sent to the client and used for drawing) i.e. players[0].position += self.displacement
-
-        // TODO - By sleeping before updating the bottom player's position, it makes the game more fair between client and host
+        /* TODO - Then add the displacement to the bottom player in the list of players (general list that sent to the
+         * client and used for drawing) i.e. players[0].position += self.displacement */
     }
 }
 
@@ -473,14 +460,11 @@ void DrawObjects()
                 }
             }
 
-            prevBalls[i].alive=tempGameState.balls[i].alive;
+            prevBalls[i].alive = tempGameState.balls[i].alive;
         }
 
         // Update players
-        for(int i = 0; i < MAX_NUM_OF_PLAYERS; ++i)
-        {
-            UpdatePlayerOnScreen(&prevPlayers[i], &(tempGameState.players[i]));
-        }
+        for(int i = 0; i < MAX_NUM_OF_PLAYERS; ++i) UpdatePlayerOnScreen(&prevPlayers[i], &(tempGameState.players[i]));
 
         // Sleep for 20ms (reasonable refresh rate)
         G8RTOS_Sleep(20);
@@ -518,8 +502,8 @@ void HostVsClient()
 
     playerType role = GetPlayerRole();
 
-    if (role == Client) G8RTOS_AddThread(&JoinGame, 0, "join");
-    else G8RTOS_AddThread(&CreateGame, 0, "create");
+    if (role == Client) G8RTOS_AddThread(&JoinGame, MAX_PRIO, "join");
+    else G8RTOS_AddThread(&CreateGame, MAX_PRIO, "create");
 
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     LCD_Clear(BACK_COLOR);
@@ -842,5 +826,36 @@ void InitBoardState()
     // Draw scores
     UpdateOverallScore();
     UpdateLEDScore();
+}
+
+/*
+ * Abstraction used to clean up the initialization of a new game.
+ */
+void AddClientGameThreads()
+{
+    G8RTOS_AddThread(&ReadJoystickClient, JOYSTICK_PRIO, "joystick");
+    G8RTOS_AddThread(&SendDataToHost, SENDDATA_PRIO, "send");
+    G8RTOS_AddThread(&ReceiveDataFromHost, RECEIVEDATA_PRIO, "receive");
+}
+
+/*
+ * Abstraction used to clean up the initialization of a new game.
+ */
+void AddHostGameThreads()
+{
+    G8RTOS_AddThread(&GenerateBall, GENBALL_PRIO, "gen ball");
+    G8RTOS_AddThread(&ReadJoystickHost, JOYSTICK_PRIO, "joystick");
+    G8RTOS_AddThread(&SendDataToClient, SENDDATA_PRIO, "send data");
+    G8RTOS_AddThread(&ReceiveDataFromClient, RECEIVEDATA_PRIO, "rcv data");
+}
+
+/*
+ * Abstraction used to clean up the initialization of a new game.
+ */
+void AddCommonGameThreads()
+{
+    G8RTOS_AddThread(&DrawObjects, DRAWOBJ_PRIO, "draw");
+    G8RTOS_AddThread(&MoveLEDs, MOVELED_PRIO, "leds");
+    G8RTOS_AddThread(&IdleThread, MIN_PRIO, "idle");
 }
 /*********************************************** Public Functions *********************************************************************/

@@ -103,6 +103,18 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define BLUE_LED BIT2
 #define RED_LED BIT0
 
+/* Used in place of raw numbers for ease and consistency of changes. */
+#define MAX_PRIO 0
+#define MIN_PRIO 255
+/* TODO - determine what the below thread priorities should be. */
+#define MOVEBALL_PRIO 50
+#define GENBALL_PRIO 50
+#define DRAWOBJ_PRIO 50
+#define JOYSTICK_PRIO 50
+#define SENDDATA_PRIO 50
+#define RECEIVEDATA_PRIO 50
+#define MOVELED_PRIO 50
+
 /* Enums for player colors */
 typedef enum
 {
@@ -337,6 +349,21 @@ void UpdateLEDScore();
  * Initializes and prints initial game state
  */
 void InitBoardState();
+
+/*
+ * Abstraction used to clean up the initialization of a new game.
+ */
+void AddCommonGameThreads();
+
+/*
+ * Abstraction used to clean up the initialization of a new game.
+ */
+void AddClientGameThreads();
+
+/*
+ * Abstraction used to clean up the initialization of a new game.
+ */
+void AddHostGameThreads();
 
 /*********************************************** Public Functions *********************************************************************/
 
