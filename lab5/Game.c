@@ -285,13 +285,21 @@ void SendDataToClient()
 {
     while (1)
     {
-        // TODO - Fill packet for client
+        // Fill packet for client
+        G8RTOS_WaitSemaphore(&GameState_Mutex);
+        GameState_t tempGameState = gameState;
+        G8RTOS_SignalSemaphore(&GameState_Mutex);
 
-        // TODO - Send packet
+        // Send packet
+        G8RTOS_WaitSemaphore(&WiFi_Mutex);
+        SendData((uint8_t*)(&tempGameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
+        G8RTOS_SignalSemaphore(&WiFi_Mutex);
 
-        // TODO - Check if game is done
-
-        // TODO - If done, Add EndOfGameHost thread with highest priority
+        // If game is done, add EndOfGameHost thread with highest priority
+        if (tempGameState.gameDone)
+        {
+            G8RTOS_AddThread(&EndOfGameHost, 0, "EOG Host");
+        }
 
         // Sleep for 5ms (found experimentally to be a good amount of time for synchronization)
         G8RTOS_Sleep(5);
@@ -350,11 +358,10 @@ void ReadJoystickHost()
         js_x_data -= js_x_bias;
         js_y_data -= js_y_bias;
 
-        // TODO - Change Self.displacement accordingly (you can experiment with how much you want to scale the ADC value)
-        // Add Displacement to Self accordingly
-        G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-        clientInfo.displacement = js_x_data;
-        G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
+        // Change self.displacement accordingly (you can experiment with how much you want to scale the ADC value)
+        G8RTOS_WaitSemaphore(&GameState_Mutex);
+        gameState.player.displacement = js_x_data;
+        G8RTOS_SignalSemaphore(&GameState_Mutex);
 
         // Sleep for 10ms
         G8RTOS_Sleep(10);
