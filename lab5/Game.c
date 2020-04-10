@@ -282,7 +282,33 @@ void SendDataToClient()
         G8RTOS_Sleep(5);
     }
 }
-
+//while (1)
+//   {
+//       // Continually receive data until a return value greater than zero is returned (meaning valid data has been read)
+//       // Note: Remember to release and take the semaphore again so you've still able to send data
+//       GameState_t tempGameState;
+//       _i32 retVal = NOTHING_RECEIVED;
+//       while(retVal != SUCCESS)
+//       {
+//           G8RTOS_WaitSemaphore(&WiFi_Mutex);
+//           retVal = ReceiveData((uint8_t*)(&tempGameState), sizeof(GameState_t)/sizeof(uint8_t));
+//           G8RTOS_SignalSemaphore(&WiFi_Mutex);
+//
+//           // Sleeping here for 1ms would avoid a deadlock
+//           G8RTOS_Sleep(1);
+//       }
+//
+//       // Empty the received packet
+//       G8RTOS_WaitSemaphore(&GameState_Mutex);
+//       gameState = tempGameState;
+//       G8RTOS_SignalSemaphore(&GameState_Mutex);
+//
+//       // If the game is done, add EndOfGameClient thread with the highest priority
+//       if (tempGameState.gameDone) G8RTOS_AddThread(&EndOfGameClient, MAX_PRIO, "End Client");
+//
+//       // Sleep for 5ms
+//       G8RTOS_Sleep(5);
+//   }
 /*
  * Thread that receives UDP packets from client
  */
@@ -290,14 +316,28 @@ void ReceiveDataFromClient()
 {
     while (1)
     {
-        // TODO - Continually receive data until a return value greater than zero is returned (meaning valid data has been read)
-
-            // Note: Remember to release and take the semaphore again so you've still able to send data
+        // Continually receive data until a return value greater than zero is returned (meaning valid data has been read)
+        // Note: Remember to release and take the semaphore again so you've still able to send data
+        SpecificPlayerInfo_t tempClientInfo;
+        _i32 retVal = NOTHING_RECEIVED;
+        while (retVal != SUCCESS)
+        {
+            G8RTOS_WaitSemaphore(&WiFi_Mutex);
+            retVal = ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t));
+            G8RTOS_SignalSemaphore(&WiFi_Mutex);
 
             // Sleeping here for 1ms would avoid a deadlock
             G8RTOS_Sleep(1);
+        }
 
-        // TODO - Update the player's current center with the displacement received from the client
+        G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+        // Empty client info packet
+        clientInfo = tempClientInfo;
+        G8RTOS_WaitSemaphore(&GameState_Mutex);
+        // Update the player's current center with the displacement received from the client
+        UpdatePlayerDisplacement(&clientInfo);
+        G8RTOS_SignalSemaphore(&GameState_Mutex);
+        G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
         // Sleep for 2ms (again found experimentally)
         G8RTOS_Sleep(2);
@@ -350,8 +390,11 @@ void ReadJoystickHost()
         // Sleep for 10ms, by sleeping before updating the bottom player's position, it makes the game more fair between client and host
         G8RTOS_Sleep(10);
 
-        /* TODO - Then add the displacement to the bottom player in the list of players (general list that sent to the
+        /* Then add the displacement to the bottom player in the list of players (general list that sent to the
          * client and used for drawing) i.e. players[0].position += self.displacement */
+        G8RTOS_WaitSemaphore(&GameState_Mutex);
+        UpdatePlayerDisplacement(&gameState.player);
+        G8RTOS_SignalSemaphore(&GameState_Mutex);
     }
 }
 
@@ -897,5 +940,21 @@ void AddCommonGameThreads()
     G8RTOS_AddThread(&DrawObjects, DRAWOBJ_PRIO, "draw");
     G8RTOS_AddThread(&MoveLEDs, MOVELED_PRIO, "leds");
     G8RTOS_AddThread(&IdleThread, MIN_PRIO, "idle");
+}
+
+/*
+ * Updates a particular player's displacement, given it's SpecificPlayerInfo_t struct.
+ * NOTE - MUST BE HOLDING THE GAMESTATE MUTEX AND/OR THE CORRESPONDING SpecificPlayerInfo MUTEX WHEN CALLING THIS FUNCTION
+ */
+void UpdatePlayerDisplacement(SpecificPlayerInfo_t *player)
+{
+    // Update the current center with the new
+    gameState.players[player->playerNumber].currentCenter += (player->displacement) / SCALER;
+
+    // TODO - wraparound logic
+    if ()
+    {
+
+    }
 }
 /*********************************************** Public Functions *********************************************************************/
