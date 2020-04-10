@@ -288,8 +288,6 @@ void CreateGame()
     clientInfo = tempClientInfo;
     G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
-
-        // TODO - Should acknowledge client once client has joined
     // Update Host SpecificPlayerInfo
     G8RTOS_WaitSemaphore(&GameState_Mutex);
     gameState.player.joined=1;
