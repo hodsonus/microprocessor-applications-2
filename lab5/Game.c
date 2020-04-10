@@ -14,20 +14,22 @@
  */
 void JoinGame()
 {
-    // Red LED = No connection
-    G8RTOS_WaitSemaphore(&LED_Mutex);
-    LP3943_LedModeSet(RED, RED_LED);
-    G8RTOS_SignalSemaphore(&LED_Mutex);
-
+    // Temp variables to prevent hold-and-wait condition
+    GameState_t tempGameState;
     // Set initial SpecificPlayerInfo_t strict attributes (you can get the IP address by calling getLocalIP()
     SpecificPlayerInfo_t tempClientInfo = {
                 CONFIG_IP,     // IP Address
                 0,             // displacement
-                BOTTOM,        // playerNumber
+                TOP,           // playerNumber
                 1,             // ready
                 0,             // joined
                 0              // acknowledge
     };
+
+    // Red LED = No connection
+    G8RTOS_WaitSemaphore(&LED_Mutex);
+    LP3943_LedModeSet(RED, RED_LED);
+    G8RTOS_SignalSemaphore(&LED_Mutex);
 
     // Empty client info packet
     G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
@@ -40,7 +42,6 @@ void JoinGame()
     G8RTOS_SignalSemaphore(&WiFi_Mutex);
 
     // Wait for server response
-    GameState_t tempGameState;
     G8RTOS_WaitSemaphore(&WiFi_Mutex);
     while( ReceiveData((uint8_t*)(&tempGameState), sizeof(GameState_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
     G8RTOS_SignalSemaphore(&WiFi_Mutex);
@@ -196,8 +197,8 @@ void EndOfGameClient()
 
     // Clear screen with winner's color
     G8RTOS_WaitSemaphore(&LCD_Mutex);
-    if (gameState.winner == TOP) LCD_Clear(PLAYER_BLUE);
-    else LCD_Clear(PLAYER_RED);
+    if (gameState.winner == TOP) LCD_Clear(gameState.players[TOP].color);
+    else LCD_Clear(gameState.players[BOTTOM].color);
     G8RTOS_SignalSemaphore(&LCD_Mutex);
 
     // Wait for host to restart game
@@ -237,15 +238,90 @@ void EndOfGameClient()
  */
 void CreateGame()
 {
-    // TODO - Initializes the players
+    // Temp variables to prevent hold-and-wait condition
+    GameState_t tempGameState;
+    SpecificPlayerInfo_t tempClientInfo;
 
-    // TODO - Establish connection with client (use an LED on the Launchpad to indicate Wi-Fi connection)
+    // Initializes the players
+    G8RTOS_WaitSemaphore(&GameState_Mutex);
+    // Host SpecificPlayerInfo
+    gameState.player.IP_address=CONFIG_IP;  // TODO - Is this right?
+    gameState.player.playerNumber=BOTTOM;
+    gameState.player.displacement=0;
+    gameState.player.ready=1;
+    gameState.player.joined=0;
+    gameState.player.acknowledge=0;
 
-        // TODO - Should be trying to receive a packet from the client
+    // Client: Top, blue
+    gameState.players[TOP].position=TOP;
+    gameState.players[TOP].color=PLAYER_BLUE;
+    gameState.players[TOP].currentCenter=PADDLE_X_CENTER;
+
+    // Host: bottom, red
+    gameState.players[BOTTOM].position=BOTTOM;
+    gameState.players[BOTTOM].color=PLAYER_RED;
+    gameState.players[BOTTOM].currentCenter=PADDLE_X_CENTER;
+
+    // Other variables
+    gameState.numberOfBalls=0;
+    gameState.winner=0;
+    gameState.gameDone=0;
+    gameState.LEDScores[BOTTOM]=0;
+    gameState.LEDScores[TOP]=0;
+    gameState.overallScores[BOTTOM]=0;
+    gameState.overallScores[TOP]=0;
+
+    G8RTOS_SignalSemaphore(&GameState_Mutex);
+
+
+    // Red LED = No connection
+    G8RTOS_WaitSemaphore(&LED_Mutex);
+    LP3943_LedModeSet(RED, RED_LED);
+    G8RTOS_SignalSemaphore(&LED_Mutex);
+
+    // Receive a packet from the client
+    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
+    G8RTOS_SignalSemaphore(&WiFi_Mutex);
+    // Store the packet received
+    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+    clientInfo = tempClientInfo;
+    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
+
 
         // TODO - Should acknowledge client once client has joined
+    // Update Host SpecificPlayerInfo
+    G8RTOS_WaitSemaphore(&GameState_Mutex);
+    gameState.player.joined=1;
+    gameState.player.acknowledge=1;
+    tempGameState=gameState;
+    G8RTOS_SignalSemaphore(&GameState_Mutex);
+    // Send new game state
+    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+    SendData((uint8_t*)(&tempGameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
+    G8RTOS_SignalSemaphore(&WiFi_Mutex);
 
-        // TODO - Wait for client acknowledgment
+    // Receive a packet from the client (waiting for acknowledgment)
+    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
+    G8RTOS_SignalSemaphore(&WiFi_Mutex);
+    // Store the packet received
+    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+    clientInfo = tempClientInfo;
+    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
+
+    if(tempClientInfo.acknowledge){
+        // Update LED to show connection
+        // Blue LED = Connection Established
+        G8RTOS_WaitSemaphore(&LED_Mutex);
+        LP3943_LedModeSet(RED, 0);
+        LP3943_LedModeSet(BLUE, BLUE_LED);
+        G8RTOS_SignalSemaphore(&LED_Mutex);
+    }
+    else{
+        G8RTOS_AddThread(&HostVsClient, MAX_PRIO, "host vs client");
+        G8RTOS_KillSelf();
+    }
 
     // Initialize the board (draw arena, players, and scores)
     InitBoardState();
