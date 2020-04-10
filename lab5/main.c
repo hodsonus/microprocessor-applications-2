@@ -21,10 +21,16 @@
  */
 void main(void)
 {
+    // Need to initialize first because the watchdog timer needs to be disabled.
     G8RTOS_Init(USING_TP, HOST_OR_CLIENT);
 
+    // Can alternatively use TLV->RANDOM_NUM_1 for repeatable number generation.
+    srand(time(NULL));
+
+    // Add the thread that bootstraps the game.
     G8RTOS_AddThread(&HostVsClient, 0, "host vs client");
 
+    // Launch the OS!
     G8RTOS_Launch();
 }
 

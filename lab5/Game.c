@@ -245,12 +245,12 @@ void CreateGame()
     // Initializes the players
     G8RTOS_WaitSemaphore(&GameState_Mutex);
     // Host SpecificPlayerInfo
-    gameState.player.IP_address=CONFIG_IP;
-    gameState.player.playerNumber=BOTTOM;
-    gameState.player.displacement=0;
-    gameState.player.ready=1;
-    gameState.player.joined=0;
-    gameState.player.acknowledge=0;
+    gameState.player.IP_address = CONFIG_IP;
+    gameState.player.playerNumber = BOTTOM;
+    gameState.player.displacement = 0;
+    gameState.player.ready = 1;
+    gameState.player.joined = 0;
+    gameState.player.acknowledge = 0;
 
     // Client: Top, blue
     gameState.players[TOP].position = TOP;
@@ -289,9 +289,9 @@ void CreateGame()
 
     // Update Host SpecificPlayerInfo
     G8RTOS_WaitSemaphore(&GameState_Mutex);
-    gameState.player.joined=1;
-    gameState.player.acknowledge=1;
-    tempGameState=gameState;
+    gameState.player.joined = 1;
+    gameState.player.acknowledge = 1;
+    tempGameState = gameState;
     G8RTOS_SignalSemaphore(&GameState_Mutex);
     // Send new game state
     G8RTOS_WaitSemaphore(&WiFi_Mutex);
@@ -307,7 +307,8 @@ void CreateGame()
     clientInfo = tempClientInfo;
     G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
-    if(tempClientInfo.acknowledge){
+    if (tempClientInfo.acknowledge)
+    {
         // Update LED to show connection
         // Blue LED = Connection Established
         G8RTOS_WaitSemaphore(&LED_Mutex);
@@ -315,7 +316,8 @@ void CreateGame()
         LP3943_LedModeSet(BLUE, BLUE_LED);
         G8RTOS_SignalSemaphore(&LED_Mutex);
     }
-    else{
+    else
+    {
         G8RTOS_AddThread(&HostVsClient, MAX_PRIO, "host vs client");
         G8RTOS_KillSelf();
     }
@@ -451,43 +453,109 @@ void ReadJoystickHost()
 void MoveBall()
 {
     // Go through array of balls and find one that's not alive
-
-    int ballToInitialize = -1;
+    int curr = -1;
     G8RTOS_WaitSemaphore(&GameState_Mutex);
     for (int i = 0; i < MAX_NUM_OF_BALLS; ++i)
     {
         if (!gameState.balls[i].alive)
         {
-            ballToInitialize = i;
+            curr = i;
             break;
         }
     }
 
     // Bug !
-    if (ballToInitialize == -1)
+    if (curr == -1)
     {
         G8RTOS_SignalSemaphore(&GameState_Mutex);
         G8RTOS_KillSelf();
     }
 
     // Once found, initialize random position and X and Y velocities, as well as color and alive attributes
-    gameState.balls[ballToInitialize].alive = true;
-    gameState.balls[ballToInitialize].currentCenterX = ARENA_MIN_X + rand() / (RAND_MAX / (ARENA_MAX_X - ARENA_MIN_X + 1) + 1);
-    gameState.balls[ballToInitialize].currentCenterY = ARENA_MIN_Y + rand() / (RAND_MAX / (ARENA_MAX_Y - ARENA_MIN_Y + 1) + 1);
-    gameState.balls[ballToInitialize].x_velocity = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
-    gameState.balls[ballToInitialize].y_velocity = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
-    gameState.balls[ballToInitialize].color = INIT_BALL_COLOR;
+    gameState.balls[curr].alive = true;
+    gameState.balls[curr].currentCenterX = ARENA_MIN_X + rand() / (RAND_MAX / (ARENA_MAX_X - ARENA_MIN_X + 1) + 1);
+    gameState.balls[curr].currentCenterY = ARENA_MIN_Y + rand() / (RAND_MAX / (ARENA_MAX_Y - ARENA_MIN_Y + 1) + 1);
+    gameState.balls[curr].velocityX = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
+    gameState.balls[curr].velocityY = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
+    gameState.balls[curr].color = INIT_BALL_COLOR;
     G8RTOS_SignalSemaphore(&GameState_Mutex);
 
     while (1)
     {
-        // TODO - Checking for collision given the current center and the velocity
+        G8RTOS_WaitSemaphore(&GameState_Mutex);
 
-        // TODO - If collision occurs, adjust velocity and color accordingly
+        // Move the ball in its current direction according to its velocity
+        gameState.balls[curr].currentCenterX += gameState.balls[curr].velocityX;
+        gameState.balls[curr].currentCenterY += gameState.balls[curr].velocityY;
 
-        // TODO - If the ball passes the boundary edge, adjust score, account for the game possibly ending, and kill self
+        // Check for 3 scenarios - (1) collision with a wall, (2) collision with paddle, or (3) past paddle
 
-        // TODO - Otherwise, just move the ball in its current direction according to its velocity
+        // (1) If collision with wall occurs, flip x velocity and move ball in-bounds
+        if (gameState.balls[curr].currentCenterX - BALL_SIZE_D2 < ARENA_MIN_X)
+        {
+            gameState.balls[curr].currentCenterX = ARENA_MIN_X + BALL_SIZE_D2;
+            gameState.balls[curr].velocityX *= -1;
+        }
+        else if (gameState.balls[curr].currentCenterX + BALL_SIZE_D2 > ARENA_MAX_X)
+        {
+            gameState.balls[curr].currentCenterX = ARENA_MAX_X - BALL_SIZE_D2;
+            gameState.balls[curr].velocityX *= -1;
+        }
+
+        // If there is an event with bottom paddle, occurs when the ball is below the bottom paddle's top edge (either scenario 2 or 3 has occurred)
+        if (gameState.balls[curr].currentCenterY + BALL_SIZE_D2 > BOTTOM_PADDLE_EDGE - WIGGLE_ROOM)
+        {
+            // (2) If collision with paddle occurs, flip y velocity and move ball to edge of paddle
+            // Collision with paddle occurs when ball center within the edges of the paddle
+            if ( (gameState.players[BOTTOM].currentCenter - PADDLE_LEN_D2) < gameState.balls[curr].currentCenterX &&
+                  gameState.balls[curr].currentCenterX < (gameState.players[BOTTOM].currentCenter + PADDLE_LEN_D2) )
+            {
+                gameState.balls[curr].currentCenterY = BOTTOM_PADDLE_EDGE - WIGGLE_ROOM - BALL_SIZE_D2;
+                gameState.balls[curr].velocityY *= -1;
+            }
+            // (3) If the ball passes the boundary edge, adjust score, account for the game possibly ending, and kill self
+            // Passing the boundary edge occurs when the ball center is not within the edges of the paddle
+            else
+            {
+                if (++gameState.LEDScores[TOP] > MAX_SCORE)
+                {
+                    gameState.winner = TOP;
+                    gameState.gameDone = true;
+                }
+
+                --gameState.numberOfBalls;
+                gameState.balls[curr].alive = false;
+                G8RTOS_KillSelf();
+            }
+        }
+        // Else if there is an event with top paddle, occurs when the ball is above the top paddle's bottom edge (either scenario 2 or 3 has occurred)
+        else if (gameState.balls[curr].currentCenterY - BALL_SIZE_D2 < TOP_PADDLE_EDGE + WIGGLE_ROOM)
+        {
+            // (2) If collision with paddle occurs, flip y velocity and move ball to edge of paddle
+            // Collision with paddle occurs when ball center within the edges of the paddle
+            if ( (gameState.players[TOP].currentCenter - PADDLE_LEN_D2) < gameState.balls[curr].currentCenterX &&
+                  gameState.balls[curr].currentCenterX < (gameState.players[TOP].currentCenter + PADDLE_LEN_D2) )
+            {
+                gameState.balls[curr].currentCenterY = TOP_PADDLE_EDGE + WIGGLE_ROOM + BALL_SIZE_D2;
+                gameState.balls[curr].velocityY *= -1;
+            }
+            // (3) Else ball passes the boundary edge, adjust score, account for the game possibly ending, and kill self
+            // Passing the boundary edge occurs when the ball center is not within the edges of the paddle
+            else
+            {
+                if (++gameState.LEDScores[BOTTOM] > MAX_SCORE)
+                {
+                    gameState.winner = BOTTOM;
+                    gameState.gameDone = true;
+                }
+
+                --gameState.numberOfBalls;
+                gameState.balls[curr].alive = false;
+                G8RTOS_KillSelf();
+            }
+        }
+
+        G8RTOS_SignalSemaphore(&GameState_Mutex);
 
         // Sleep for 35ms
         G8RTOS_Sleep(35);
@@ -538,33 +606,33 @@ void EndOfGameHost()
 
     G8RTOS_WaitSemaphore(&GameState_Mutex);
     // Host SpecificPlayerInfo
-    gameState.player.IP_address=CONFIG_IP;
-    gameState.player.playerNumber=BOTTOM;
-    gameState.player.displacement=0;
-    gameState.player.ready=1;
-    gameState.player.joined=0;
-    gameState.player.acknowledge=0;
+    gameState.player.IP_address = CONFIG_IP;
+    gameState.player.playerNumber = BOTTOM;
+    gameState.player.displacement = 0;
+    gameState.player.ready = 1;
+    gameState.player.joined = 0;
+    gameState.player.acknowledge = 0;
 
     // Client: Top, blue
-    gameState.players[TOP].position=TOP;
-    gameState.players[TOP].color=PLAYER_BLUE;
-    gameState.players[TOP].currentCenter=PADDLE_X_CENTER;
+    gameState.players[TOP].position = TOP;
+    gameState.players[TOP].color = PLAYER_BLUE;
+    gameState.players[TOP].currentCenter = PADDLE_X_CENTER;
 
     // Host: bottom, red
-    gameState.players[BOTTOM].position=BOTTOM;
-    gameState.players[BOTTOM].color=PLAYER_RED;
-    gameState.players[BOTTOM].currentCenter=PADDLE_X_CENTER;
+    gameState.players[BOTTOM].position = BOTTOM;
+    gameState.players[BOTTOM].color = PLAYER_RED;
+    gameState.players[BOTTOM].currentCenter = PADDLE_X_CENTER;
 
     // Other variables
-    gameState.numberOfBalls=0;
-    gameState.winner=0;
-    gameState.gameDone=0;
-    gameState.LEDScores[BOTTOM]=0;
-    gameState.LEDScores[TOP]=0;
-    gameState.overallScores[BOTTOM]=0;
-    gameState.overallScores[TOP]=0;
+    gameState.numberOfBalls = 0;
+    gameState.winner = 0;
+    gameState.gameDone = 0;
+    gameState.LEDScores[BOTTOM] = 0;
+    gameState.LEDScores[TOP] = 0;
+    gameState.overallScores[BOTTOM] = 0;
+    gameState.overallScores[TOP] = 0;
 
-    GameState_t tempGameState=gameState;
+    GameState_t tempGameState = gameState;
 
     G8RTOS_SignalSemaphore(&GameState_Mutex);
 
@@ -1034,7 +1102,7 @@ void AddCommonGameThreads()
 
 /*
  * Updates a particular player's displacement, given it's SpecificPlayerInfo_t struct.
- * NOTE - MUST BE HOLDING THE GAMESTATE MUTEX AND/OR THE CORRESPONDING SpecificPlayerInfo MUTEX WHEN CALLING THIS FUNCTION
+ * NOTE - MUST BE HOLDING THE GameState MUTEX AND/OR THE CORRESPONDING SpecificPlayerInfo MUTEX WHEN CALLING THIS FUNCTION
  */
 void UpdatePlayerDisplacement(SpecificPlayerInfo_t *player)
 {

@@ -76,6 +76,8 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define BOTTOM_SCORE_MIN_Y          (BOTTOM_SCORE_MAX_Y - SCORE_WID)
 #define BOTTOM_SCORE_MAX_Y          ARENA_MAX_Y
 
+#define MAX_SCORE                   7
+
 /* Amount of allowable space for collisions with the sides of paddles */
 #define WIGGLE_ROOM                 2
 
@@ -106,10 +108,9 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define BLUE_LED                    BIT2
 #define RED_LED                     BIT0
 
-/* Used in place of raw numbers for ease and consistency of changes. */
+/* Thread priorities used in place of raw numbers for ease and consistency of changes. */
 #define MAX_PRIO                    0
 #define MIN_PRIO                    255
-/* TODO - determine what the below thread priorities should be. */
 #define MOVEBALL_PRIO               50
 #define GENBALL_PRIO                50
 #define DRAWOBJ_PRIO                50
@@ -168,8 +169,8 @@ typedef struct
 {
     int16_t currentCenterX;
     int16_t currentCenterY;
-    int16_t x_velocity;
-    int16_t y_velocity;
+    int16_t velocityX;
+    int16_t velocityY;
     uint16_t color;
     bool alive;
 } Ball_t;
