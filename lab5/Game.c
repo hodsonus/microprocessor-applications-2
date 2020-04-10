@@ -822,13 +822,13 @@ void UpdatePlayerOnScreen(PrevPlayer_t *prevPlayerIn, GeneralPlayerInfo_t *outPl
     }
     G8RTOS_SignalSemaphore(&LCD_Mutex);
 
-    prevPlayerIn->Center=outPlayer->currentCenter;
+    prevPlayerIn->Center = outPlayer->currentCenter;
 }
 
 /*
  * Draw a new ball on screen
  */
-void DrawBallOnScreen(PrevBall_t * previousBall, Ball_t * currentBall)
+void DrawBallOnScreen(PrevBall_t *previousBall, Ball_t *currentBall)
 {
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Draw the new ball
@@ -912,8 +912,8 @@ void UpdateLEDScore()
 {
     uint16_t player0LEDScore = 0;
     uint16_t player1LEDScore = 0;
-    for(int i = 0; i < gameState.LEDScores[0]; i++) player0LEDScore |= (1<<i);
-    for(int i = 0; i < gameState.LEDScores[1]; i++) player1LEDScore |= (1<<i);
+    for (int i = 0; i < gameState.LEDScores[0]; i++) player0LEDScore |= (1<<i);
+    for (int i = 0; i < gameState.LEDScores[1]; i++) player1LEDScore |= (1<<i);
 
     G8RTOS_WaitSemaphore(&LED_Mutex);
     // Clear LED scores
@@ -996,13 +996,20 @@ void AddCommonGameThreads()
  */
 void UpdatePlayerDisplacement(SpecificPlayerInfo_t *player)
 {
-    // Update the current center with the new
-    gameState.players[player->playerNumber].currentCenter += (player->displacement) / SCALER;
+    // Scale the raw (but zeroed) joystick ADC value
+    int32_t scaledDisplacement = (player->displacement) * ARENA_MAX_X / JOYSTICK_SCALER;
 
-    // TODO - wraparound logic
-    if ()
+    // Update the player's current center with the scaled displacement
+    gameState.players[player->playerNumber].currentCenter += scaledDisplacement;
+
+    // Wraparound logic
+    if (gameState.players[player->playerNumber].currentCenter > HORIZ_CENTER_MAX_PL)
     {
-
+        gameState.players[player->playerNumber].currentCenter = HORIZ_CENTER_MAX_PL;
+    }
+    else if (gameState.players[player->playerNumber].currentCenter < HORIZ_CENTER_MIN_PL)
+    {
+        gameState.players[player->playerNumber].currentCenter = HORIZ_CENTER_MIN_PL;
     }
 }
 /*********************************************** Public Functions *********************************************************************/

@@ -30,6 +30,9 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 // This game can actually be played with 4 players... a little bit more challenging, but doable! 
 #define NUM_OF_PLAYERS_PLAYING      2
 
+/* Value that is used to scale the raw Joystick values. */
+#define JOYSTICK_SCALER             8192
+
 /* Size of game arena */
 #define ARENA_MIN_X                 40
 #define ARENA_MAX_X                 280
@@ -37,7 +40,7 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define ARENA_MAX_Y                 240
 
 /* Size of objects */
-/* Note: LEN is always X-coordinate, WID is alway Y-coordinate */
+/* Note: LEN is always X-coordinate, WID is always Y-coordinate */
 #define PADDLE_LEN                  64
 #define PADDLE_LEN_D2               (PADDLE_LEN >> 1)
 #define PADDLE_WID                  4
@@ -364,6 +367,12 @@ void AddClientGameThreads();
  * Adds the host's game threads - abstraction used to clean up the initialization of a new game.
  */
 void AddHostGameThreads();
+
+/*
+ * Updates a particular player's displacement, given it's SpecificPlayerInfo_t struct.
+ * NOTE - MUST BE HOLDING THE GAMESTATE MUTEX AND/OR THE CORRESPONDING SpecificPlayerInfo MUTEX WHEN CALLING THIS FUNCTION
+ */
+void UpdatePlayerDisplacement(SpecificPlayerInfo_t *player);
 
 /*********************************************** Public Functions *********************************************************************/
 
