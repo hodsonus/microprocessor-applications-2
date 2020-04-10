@@ -479,6 +479,9 @@ void MoveBall()
     gameState.balls[curr].velocityX = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
     gameState.balls[curr].velocityY = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
     gameState.balls[curr].color = INIT_BALL_COLOR;
+
+    ++gameState.numberOfBalls;
+
     G8RTOS_SignalSemaphore(&GameState_Mutex);
 
     while (1)
