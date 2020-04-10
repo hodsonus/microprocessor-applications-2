@@ -246,33 +246,32 @@ void CreateGame()
     G8RTOS_WaitSemaphore(&GameState_Mutex);
     // Host SpecificPlayerInfo
     gameState.player.IP_address=CONFIG_IP;  // TODO - Is this right?
-    gameState.player.playerNumber=BOTTOM;
-    gameState.player.displacement=0;
-    gameState.player.ready=1;
-    gameState.player.joined=0;
-    gameState.player.acknowledge=0;
+    gameState.player.playerNumber = BOTTOM;
+    gameState.player.displacement = 0;
+    gameState.player.ready = 1;
+    gameState.player.joined = 0;
+    gameState.player.acknowledge = 0;
 
     // Client: Top, blue
-    gameState.players[TOP].position=TOP;
-    gameState.players[TOP].color=PLAYER_BLUE;
-    gameState.players[TOP].currentCenter=PADDLE_X_CENTER;
+    gameState.players[TOP].position = TOP;
+    gameState.players[TOP].color = PLAYER_BLUE;
+    gameState.players[TOP].currentCenter = PADDLE_X_CENTER;
 
     // Host: bottom, red
-    gameState.players[BOTTOM].position=BOTTOM;
-    gameState.players[BOTTOM].color=PLAYER_RED;
-    gameState.players[BOTTOM].currentCenter=PADDLE_X_CENTER;
+    gameState.players[BOTTOM].position = BOTTOM;
+    gameState.players[BOTTOM].color = PLAYER_RED;
+    gameState.players[BOTTOM].currentCenter = PADDLE_X_CENTER;
 
     // Other variables
-    gameState.numberOfBalls=0;
-    gameState.winner=0;
-    gameState.gameDone=0;
-    gameState.LEDScores[BOTTOM]=0;
-    gameState.LEDScores[TOP]=0;
-    gameState.overallScores[BOTTOM]=0;
-    gameState.overallScores[TOP]=0;
+    gameState.numberOfBalls = 0;
+    gameState.winner = 0;
+    gameState.gameDone = 0;
+    gameState.LEDScores[BOTTOM] = 0;
+    gameState.LEDScores[TOP] = 0;
+    gameState.overallScores[BOTTOM] = 0;
+    gameState.overallScores[TOP] = 0;
 
     G8RTOS_SignalSemaphore(&GameState_Mutex);
-
 
     // Red LED = No connection
     G8RTOS_WaitSemaphore(&LED_Mutex);
@@ -451,8 +450,9 @@ void ReadJoystickHost()
  */
 void MoveBall()
 {
-    int ballToInitialize = -1;
     // Go through array of balls and find one that's not alive
+
+    int ballToInitialize = -1;
     G8RTOS_WaitSemaphore(&GameState_Mutex);
     for (int i = 0; i < MAX_NUM_OF_BALLS; ++i)
     {
@@ -474,6 +474,8 @@ void MoveBall()
     gameState.balls[ballToInitialize].alive = true;
     gameState.balls[ballToInitialize].currentCenterX = ARENA_MIN_X + rand() / (RAND_MAX / (ARENA_MAX_X - ARENA_MIN_X + 1) + 1);
     gameState.balls[ballToInitialize].currentCenterY = ARENA_MIN_Y + rand() / (RAND_MAX / (ARENA_MAX_Y - ARENA_MIN_Y + 1) + 1);
+    gameState.balls[ballToInitialize].x_velocity = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
+    gameState.balls[ballToInitialize].y_velocity = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
     gameState.balls[ballToInitialize].color = INIT_BALL_COLOR;
     G8RTOS_SignalSemaphore(&GameState_Mutex);
 
@@ -630,7 +632,7 @@ void HostVsClient()
     G8RTOS_InitSemaphore(&GameState_Mutex, 1);
 
     // Write message on screen assisting player choice of Host vs. Client
-    LCD_Text(40, 100, "Press left for host and right for client.", LCD_WHITE);
+    LCD_Text(0, 100, "Press left for host and right for client", LCD_WHITE);
 
     playerType role = GetPlayerRole();
     if (role == Client) G8RTOS_AddThread(&JoinGame, MAX_PRIO, "join");

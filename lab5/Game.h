@@ -92,8 +92,8 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define VERT_CENTER_MAX_BALL        (ARENA_MAX_Y - BALL_SIZE_D2)
 #define VERT_CENTER_MIN_BALL        (ARENA_MIN_Y + BALL_SIZE_D2)
 
-/* Maximum ball speed */
-#define MAX_BALL_SPEED              6
+/* Maximum ball velocity */
+#define MAX_BALL_VELO               6
 
 /* Background color - Black */
 #define BACK_COLOR                  LCD_BLACK
@@ -168,6 +168,8 @@ typedef struct
 {
     int16_t currentCenterX;
     int16_t currentCenterY;
+    int16_t x_velocity;
+    int16_t y_velocity;
     uint16_t color;
     bool alive;
 } Ball_t;
