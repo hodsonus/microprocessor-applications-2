@@ -78,10 +78,10 @@ extern "C" {
 #define JOHN
 
 #ifdef JOHN
-    #define SSID_NAME       "Cisco22854"         /* Access point name to connect to. */
+    #define SSID_NAME       "FiOS-WY14J"         /* Access point name to connect to. */
     #define SEC_TYPE        SL_SEC_TYPE_WPA_WPA2    /* Security type of the Access piont */
     //#define SEC_TYPE        SL_SEC_TYPE_OPEN    /* Security type of the Access piont */
-    #define PASSKEY         "tiffytiffy"                  /* Password in case of secure AP */
+    #define PASSKEY         "pun016urn4164bathe"                  /* Password in case of secure AP */
     #define PASSKEY_LEN     pal_Strlen(PASSKEY)  /* Password length in case of secure AP */
 #endif
 

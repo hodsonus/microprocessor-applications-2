@@ -1,6 +1,5 @@
 /*
  * Places need to change name for different configuration:
- *      Game.h
  *      sl_common.h
  *      cc3100_usage.h
  */

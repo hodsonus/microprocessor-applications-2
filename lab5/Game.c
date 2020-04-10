@@ -404,7 +404,7 @@ void GenerateBall()
     {
         G8RTOS_WaitSemaphore(&GameState_Mutex);
         numBallsTemp = gameState.numberOfBalls;
-        G8RTOS_WaitSemaphore(&GameState_Mutex);
+        G8RTOS_SignalSemaphore(&GameState_Mutex);
 
         // Adds another MoveBall thread if the number of balls is less than the max
         if (numBallsTemp < MAX_NUM_OF_BALLS) G8RTOS_AddThread(&MoveBall, MOVEBALL_PRIO, "move ball");
@@ -469,6 +469,7 @@ void MoveBall()
     {
         G8RTOS_SignalSemaphore(&GameState_Mutex);
         G8RTOS_KillSelf();
+        while(1);
     }
 
     // Once found, initialize random position and X and Y velocities, as well as color and alive attributes

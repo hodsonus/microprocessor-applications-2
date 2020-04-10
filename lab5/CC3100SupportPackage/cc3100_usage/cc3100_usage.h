@@ -39,7 +39,7 @@ typedef enum
      * Change host IP by
      * Change IP using "ifconfig | grep inet", can also be found in System Preferences -> Network -> TCP/IP -> Router)
      */
-    #define HOST_IP_ADDR           0xC0A80191               // IP address of server to connect to (my laptop)
+    #define HOST_IP_ADDR           0xC0A801AD               // IP address of server to connect to (my laptop)
     #define PORT_NUM               5001                     // Port number to be used (same on laptop and board)
     #define NO_OF_PACKETS          1                        // Number of packets to send out
 
