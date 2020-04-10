@@ -356,33 +356,7 @@ void SendDataToClient()
         G8RTOS_Sleep(5);
     }
 }
-//while (1)
-//   {
-//       // Continually receive data until a return value greater than zero is returned (meaning valid data has been read)
-//       // Note: Remember to release and take the semaphore again so you've still able to send data
-//       GameState_t tempGameState;
-//       _i32 retVal = NOTHING_RECEIVED;
-//       while(retVal != SUCCESS)
-//       {
-//           G8RTOS_WaitSemaphore(&WiFi_Mutex);
-//           retVal = ReceiveData((uint8_t*)(&tempGameState), sizeof(GameState_t)/sizeof(uint8_t));
-//           G8RTOS_SignalSemaphore(&WiFi_Mutex);
-//
-//           // Sleeping here for 1ms would avoid a deadlock
-//           G8RTOS_Sleep(1);
-//       }
-//
-//       // Empty the received packet
-//       G8RTOS_WaitSemaphore(&GameState_Mutex);
-//       gameState = tempGameState;
-//       G8RTOS_SignalSemaphore(&GameState_Mutex);
-//
-//       // If the game is done, add EndOfGameClient thread with the highest priority
-//       if (tempGameState.gameDone) G8RTOS_AddThread(&EndOfGameClient, MAX_PRIO, "End Client");
-//
-//       // Sleep for 5ms
-//       G8RTOS_Sleep(5);
-//   }
+
 /*
  * Thread that receives UDP packets from client
  */
