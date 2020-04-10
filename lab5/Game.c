@@ -245,7 +245,7 @@ void CreateGame()
     // Initializes the players
     G8RTOS_WaitSemaphore(&GameState_Mutex);
     // Host SpecificPlayerInfo
-    gameState.player.IP_address=CONFIG_IP;  // TODO - Is this right?
+    gameState.player.IP_address=CONFIG_IP;
     gameState.player.playerNumber=BOTTOM;
     gameState.player.displacement=0;
     gameState.player.ready=1;
@@ -536,7 +536,7 @@ void EndOfGameHost()
 
     G8RTOS_WaitSemaphore(&GameState_Mutex);
     // Host SpecificPlayerInfo
-    gameState.player.IP_address=CONFIG_IP;  // TODO - Is this right?
+    gameState.player.IP_address=CONFIG_IP;
     gameState.player.playerNumber=BOTTOM;
     gameState.player.displacement=0;
     gameState.player.ready=1;
