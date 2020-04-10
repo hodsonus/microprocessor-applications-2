@@ -525,7 +525,10 @@ void MoveBall()
 
                 --gameState.numberOfBalls;
                 gameState.balls[curr].alive = false;
+
+                G8RTOS_SignalSemaphore(&GameState_Mutex);
                 G8RTOS_KillSelf();
+                while(1);
             }
         }
         // Else if there is an event with top paddle, occurs when the ball is above the top paddle's bottom edge (either scenario 2 or 3 has occurred)
@@ -551,7 +554,10 @@ void MoveBall()
 
                 --gameState.numberOfBalls;
                 gameState.balls[curr].alive = false;
+
+                G8RTOS_SignalSemaphore(&GameState_Mutex);
                 G8RTOS_KillSelf();
+                while(1);
             }
         }
 
