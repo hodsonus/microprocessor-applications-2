@@ -5,6 +5,7 @@
  *      Author: John Hodson, Shida Yang
  */
 
+#include <stdlib.h>
 #include "Game.h"
 
 /*********************************************** Client Threads *********************************************************************/
@@ -246,7 +247,8 @@ void CreateGame()
 
         // TODO - Wait for client acknowledgment
 
-    // TODO - Initialize the board (draw arena, players, and scores)
+    // Initialize the board (draw arena, players, and scores)
+    InitBoardState();
 
     // Add host and common threads
     AddHostGameThreads();
@@ -358,9 +360,31 @@ void ReadJoystickHost()
  */
 void MoveBall()
 {
-    // TODO - Go through array of balls and find one that's not alive
+    int ballToInitialize = -1;
+    // Go through array of balls and find one that's not alive
+    G8RTOS_WaitSemaphore(&GameState_Mutex);
+    for (int i = 0; i < MAX_NUM_OF_BALLS; ++i)
+    {
+        if (!gameState.balls[i].alive)
+        {
+            ballToInitialize = i;
+            break;
+        }
+    }
 
-    // TODO - Once found, initialize random position and X and Y velocities, as well as color and alive attributes
+    // Bug !
+    if (ballToInitialize == -1)
+    {
+        G8RTOS_SignalSemaphore(&GameState_Mutex);
+        G8RTOS_KillSelf();
+    }
+
+    // Once found, initialize random position and X and Y velocities, as well as color and alive attributes
+    gameState.balls[ballToInitialize].alive = true;
+    gameState.balls[ballToInitialize].currentCenterX = ARENA_MIN_X + rand() / (RAND_MAX / (ARENA_MAX_X - ARENA_MIN_X + 1) + 1);
+    gameState.balls[ballToInitialize].currentCenterY = ARENA_MIN_Y + rand() / (RAND_MAX / (ARENA_MAX_Y - ARENA_MIN_Y + 1) + 1);
+    gameState.balls[ballToInitialize].color = INIT_BALL_COLOR;
+    G8RTOS_SignalSemaphore(&GameState_Mutex);
 
     while (1)
     {
@@ -382,24 +406,46 @@ void MoveBall()
  */
 void EndOfGameHost()
 {
-    // TODO - Wait for all the semaphores to be released
+    // Wait for all the semaphores to be released
+    G8RTOS_WaitSemaphore(&LED_Mutex);
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
+    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+    G8RTOS_WaitSemaphore(&GameState_Mutex);
 
     // Kill all other threads
     G8RTOS_KillAllOtherThreads();
 
-    // TODO - Re-initialize semaphores
+    // Re-initialize semaphores
+    G8RTOS_InitSemaphore(&LED_Mutex, 1);
+    G8RTOS_InitSemaphore(&LCD_Mutex, 1);
+    G8RTOS_InitSemaphore(&WiFi_Mutex, 1);
+    G8RTOS_InitSemaphore(&SpecificPlayerInfo_Mutex, 1);
+    G8RTOS_InitSemaphore(&GameState_Mutex, 1);
 
-    // TODO - Clear screen with the winner's color
+    // Clear screen with winner's color
+    G8RTOS_WaitSemaphore(&LCD_Mutex);
+    if (gameState.winner == TOP) LCD_Clear(PLAYER_BLUE);
+    else LCD_Clear(PLAYER_RED);
+    G8RTOS_SignalSemaphore(&LCD_Mutex);
 
-    // TODO - Print some message that waits for the host's action to start a new game
+    // Print some message that waits for the host's action to start a new game
+    LCD_Text(40, 100, "Press left to play again as the host.", LCD_WHITE);
 
-    // TODO - Create an aperiodic thread that waits for the host's button press (the client will just be waiting on the host to start a new game)
+    // Port should still be initialized from the original HostVsClient decision
+    // Waits for the host's button press
+    P5->IFG &= ~BIT5;
+    while (P5->IFG & BIT5);
+    P5->IFG &= ~BIT5;
 
-    // TODO - Wait for button press event
+    // TODO - Send notification to client, the client is just waiting on the host to start a new game
 
-    // TODO - Send notification to client
+    // Reinitialize the game and objects
+    InitBoardState();
 
-    // TODO - Reinitialize the game and objects and add back all the threads
+    // Add back all the threads
+    AddHostGameThreads();
+    AddCommonGameThreads();
 
     // Kill self
     G8RTOS_KillSelf();
@@ -492,10 +538,10 @@ void HostVsClient()
     G8RTOS_InitSemaphore(&SpecificPlayerInfo_Mutex, 1);
     G8RTOS_InitSemaphore(&GameState_Mutex, 1);
 
-    // TODO - Write message on screen assisting player choice of Host vs. Client
+    // Write message on screen assisting player choice of Host vs. Client
+    LCD_Text(40, 100, "Press left for host and right for client.", LCD_WHITE);
 
     playerType role = GetPlayerRole();
-
     if (role == Client) G8RTOS_AddThread(&JoinGame, MAX_PRIO, "join");
     else G8RTOS_AddThread(&CreateGame, MAX_PRIO, "create");
 
@@ -805,9 +851,9 @@ void InitBoardState()
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Clear background
     LCD_Clear(BACK_COLOR);
-
     // Draw two vertical lines
-    for(int i=ARENA_MIN_Y; i<=ARENA_MAX_Y; i++){
+    for(int i = ARENA_MIN_Y; i <= ARENA_MAX_Y; i++)
+    {
         LCD_SetPoint(ARENA_MIN_X, i, LCD_WHITE);
         LCD_SetPoint(ARENA_MAX_X, i, LCD_WHITE);
     }
@@ -823,7 +869,7 @@ void InitBoardState()
 }
 
 /*
- * Abstraction used to clean up the initialization of a new game.
+ * Adds the client's game threads - abstraction used to clean up the initialization of a new game.
  */
 void AddClientGameThreads()
 {
@@ -833,7 +879,7 @@ void AddClientGameThreads()
 }
 
 /*
- * Abstraction used to clean up the initialization of a new game.
+ * Adds the host's game threads - abstraction used to clean up the initialization of a new game.
  */
 void AddHostGameThreads()
 {
@@ -844,7 +890,7 @@ void AddHostGameThreads()
 }
 
 /*
- * Abstraction used to clean up the initialization of a new game.
+ * Adds the common game threads - abstraction used to clean up the initialization of a new game.
  */
 void AddCommonGameThreads()
 {

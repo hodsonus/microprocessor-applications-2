@@ -94,6 +94,7 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 
 /* Background color - Black */
 #define BACK_COLOR                  LCD_BLACK
+#define INIT_BALL_COLOR             LCD_WHITE
 
 /* Offset for printing player to avoid blips from left behind ball */
 #define PRINT_OFFSET                10
@@ -350,17 +351,17 @@ void UpdateLEDScore();
 void InitBoardState();
 
 /*
- * Abstraction used to clean up the initialization of a new game.
+ * Adds the common game threads - abstraction used to clean up the initialization of a new game.
  */
 void AddCommonGameThreads();
 
 /*
- * Abstraction used to clean up the initialization of a new game.
+ * Adds the client's game threads - abstraction used to clean up the initialization of a new game.
  */
 void AddClientGameThreads();
 
 /*
- * Abstraction used to clean up the initialization of a new game.
+ * Adds the host's game threads - abstraction used to clean up the initialization of a new game.
  */
 void AddHostGameThreads();
 
