@@ -529,7 +529,47 @@ void EndOfGameHost()
     while (P5->IFG & BIT5);
     P5->IFG &= ~BIT5;
 
-    // TODO - Send notification to client, the client is just waiting on the host to start a new game
+    // Reset game variables
+    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+    clientInfo.displacement=0;
+    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
+
+    G8RTOS_WaitSemaphore(&GameState_Mutex);
+    // Host SpecificPlayerInfo
+    gameState.player.IP_address=CONFIG_IP;  // TODO - Is this right?
+    gameState.player.playerNumber=BOTTOM;
+    gameState.player.displacement=0;
+    gameState.player.ready=1;
+    gameState.player.joined=0;
+    gameState.player.acknowledge=0;
+
+    // Client: Top, blue
+    gameState.players[TOP].position=TOP;
+    gameState.players[TOP].color=PLAYER_BLUE;
+    gameState.players[TOP].currentCenter=PADDLE_X_CENTER;
+
+    // Host: bottom, red
+    gameState.players[BOTTOM].position=BOTTOM;
+    gameState.players[BOTTOM].color=PLAYER_RED;
+    gameState.players[BOTTOM].currentCenter=PADDLE_X_CENTER;
+
+    // Other variables
+    gameState.numberOfBalls=0;
+    gameState.winner=0;
+    gameState.gameDone=0;
+    gameState.LEDScores[BOTTOM]=0;
+    gameState.LEDScores[TOP]=0;
+    gameState.overallScores[BOTTOM]=0;
+    gameState.overallScores[TOP]=0;
+
+    GameState_t tempGameState=gameState;
+
+    G8RTOS_SignalSemaphore(&GameState_Mutex);
+
+    // Send notification to client, the client is just waiting on the host to start a new game
+    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+    SendData((uint8_t*)(&tempGameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
+    G8RTOS_SignalSemaphore(&WiFi_Mutex);
 
     // Reinitialize the game and objects
     InitBoardState();
@@ -997,10 +1037,12 @@ void AddCommonGameThreads()
 void UpdatePlayerDisplacement(SpecificPlayerInfo_t *player)
 {
     // Scale the raw (but zeroed) joystick ADC value
-    int32_t scaledDisplacement = (player->displacement) * ARENA_MAX_X / JOYSTICK_SCALER;
+    int32_t scaledDisplacement = (player->displacement) ;
+    scaledDisplacement *= ARENA_MAX_X;
+    scaledDisplacement /= JOYSTICK_SCALER;
 
     // Update the player's current center with the scaled displacement
-    gameState.players[player->playerNumber].currentCenter += scaledDisplacement;
+    gameState.players[player->playerNumber].currentCenter += (int16_t)scaledDisplacement;
 
     // Wraparound logic
     if (gameState.players[player->playerNumber].currentCenter > HORIZ_CENTER_MAX_PL)
