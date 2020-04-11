@@ -37,7 +37,7 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define ARENA_MIN_X                 40
 #define ARENA_MAX_X                 280
 #define ARENA_MIN_Y                 0
-#define ARENA_MAX_Y                 240
+#define ARENA_MAX_Y                 239
 
 /* Size of objects */
 /* Note: LEN is always X-coordinate, WID is always Y-coordinate */
