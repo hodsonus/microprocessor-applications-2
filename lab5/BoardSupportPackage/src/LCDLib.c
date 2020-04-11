@@ -131,7 +131,7 @@ void LCD_DrawRectangle(uint16_t xStart, uint16_t xEnd, uint16_t yStart, uint16_t
     {
         LCD_Write_Data_Only(Color);
     }
-    SPI_CS_LCD_High;
+    SPI_CS_LCD_HIGH;
 }
 
 /******************************************************************************
