@@ -954,8 +954,8 @@ void DrawBallOnScreen(PrevBall_t *previousBall, Ball_t *currentBall)
     // Draw the new ball
     LCD_DrawRectangle(currentBall->currentCenterX - BALL_SIZE_D2,
                       currentBall->currentCenterX + BALL_SIZE_D2,
-                      currentBall->currentCenterX - BALL_SIZE_D2,
-                      currentBall->currentCenterX + BALL_SIZE_D2,
+                      currentBall->currentCenterY - BALL_SIZE_D2,
+                      currentBall->currentCenterY + BALL_SIZE_D2,
                       currentBall->color
     );
     G8RTOS_SignalSemaphore(&LCD_Mutex);
