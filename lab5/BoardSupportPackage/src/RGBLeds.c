@@ -85,6 +85,16 @@ void LP3943_LedModeSet(uint32_t unit, uint16_t LED_DATA)
 
 void init_RGBLEDS()
 {
+    // Fixes the "reprogramming while sending data" bug, toggles 10 times to allow data to be "sent"
+    P3->DIR |= BIT7;
+    for (int i = 0; i < 10; i++)
+    {
+        BITBAND_PERI(P3->OUT, 7) =~ BITBAND_PERI(P3->OUT, 7);
+        DelayMs(1);
+        BITBAND_PERI(P3->OUT, 7) =~ BITBAND_PERI(P3->OUT, 7);
+        DelayMs(1);
+    }
+
     // Software reset enable
     EUSCI_B2->CTLW0 = EUSCI_B_CTLW0_SWRST;
 
