@@ -157,7 +157,7 @@ void SysTick_Handler()
     for (int i = 0; i < NumberOfThreads; ++i, thread = thread->next)
     {
         // if the current thread is asleep and it is time to wake it up
-        if (thread->asleep && thread->sleep_cnt == SystemTime) {
+        if (thread->asleep && thread->sleep_cnt <= SystemTime) {
 
             // wake it up
             thread->asleep = false;

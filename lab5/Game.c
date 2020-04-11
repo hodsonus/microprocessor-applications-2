@@ -410,7 +410,7 @@ void GenerateBall()
         if (numBallsTemp < MAX_NUM_OF_BALLS) G8RTOS_AddThread(&MoveBall, MOVEBALL_PRIO, "move ball");
 
         // Sleeps proportional to the number of balls currently in play
-        G8RTOS_Sleep(1000 * numBallsTemp);
+        G8RTOS_Sleep(1000 * numBallsTemp + 1);
     }
 }
 
