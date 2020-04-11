@@ -66,12 +66,12 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define BOTTOM_PADDLE_EDGE          (ARENA_MAX_Y - PADDLE_WID)
 
 /* Edge coordinates for the scores */
-#define TOP_SCORE_MIN_X             (TOP_SCORE_MAX_X - SCORE_LEN)
+#define TOP_SCORE_MIN_X             (TOP_SCORE_MAX_X - SCORE_LEN * 2)
 #define TOP_SCORE_MAX_X             (ARENA_MIN_X - 1)
 #define TOP_SCORE_MIN_Y             ARENA_MIN_Y
 #define TOP_SCORE_MAX_Y             (TOP_SCORE_MIN_Y + SCORE_WID)
 
-#define BOTTOM_SCORE_MIN_X          (BOTTOM_SCORE_MAX_X - SCORE_LEN)
+#define BOTTOM_SCORE_MIN_X          (BOTTOM_SCORE_MAX_X - SCORE_LEN * 2)
 #define BOTTOM_SCORE_MAX_X          (ARENA_MIN_X - 1)
 #define BOTTOM_SCORE_MIN_Y          (BOTTOM_SCORE_MAX_Y - SCORE_WID)
 #define BOTTOM_SCORE_MAX_Y          ARENA_MAX_Y
