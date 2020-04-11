@@ -353,6 +353,12 @@ void SendDataToClient()
         // If game is done, add EndOfGameHost thread with highest priority
         if (tempGameState.gameDone) G8RTOS_AddThread(&EndOfGameHost, MAX_PRIO, "EOG Host");
 
+
+        // TODO - might have to make this longer (like 6ms) so that when host send data, client will always be ready to receive
+        //        client receive and host send will eventually sync because the receive is a waiting loop (not so sure, but it seems to be this way)
+        //           0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
+        // Host            S                 S                 S     ... (S=send)
+        // Client    RS W  RE SL RS W  W  W  RE SL RS W  W  W  RE SL ... (RS=receive start, W=wait, RE=receive end, SL=sleep)
         // Sleep for 5ms (found experimentally to be a good amount of time for synchronization)
         G8RTOS_Sleep(5);
     }
@@ -366,7 +372,7 @@ void ReceiveDataFromClient()
     while (1)
     {
         // Continually receive data until a return value greater than zero is returned (meaning valid data has been read)
-        // Note: Remember to release and take the semaphore again so you've still able to send data
+        // Note: Remember to release and take the semaphore again so you've still able to send data (not so sure, but it seems to be this way)
         SpecificPlayerInfo_t tempClientInfo;
         _i32 retVal = NOTHING_RECEIVED;
         while (retVal != SUCCESS)
@@ -388,6 +394,8 @@ void ReceiveDataFromClient()
         G8RTOS_SignalSemaphore(&GameState_Mutex);
         G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
+        // TODO - might have to make this shorter (like 1ms) so that the host will be ready to receive data when client sends one
+        //        client send and host receive will eventually sync because the receive is a waiting loop
         // Sleep for 2ms (again found experimentally)
         G8RTOS_Sleep(2);
     }
