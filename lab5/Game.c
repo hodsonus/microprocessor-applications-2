@@ -1032,8 +1032,8 @@ void UpdateLEDScore()
 {
     uint16_t player0LEDScore = 0;
     uint16_t player1LEDScore = 0;
-    for (int i = 0; i < gameState.LEDScores[0]; i++) player0LEDScore |= (1<<i);
-    for (int i = 0; i < gameState.LEDScores[1]; i++) player1LEDScore |= (1<<i);
+    for (int i = 0; i < gameState.LEDScores[0]; i++) player0LEDScore |= (BIT0<<i);
+    for (int i = 0; i < gameState.LEDScores[1]; i++) player1LEDScore |= (BITF>>i);
 
     G8RTOS_WaitSemaphore(&LED_Mutex);
     // Clear LED scores

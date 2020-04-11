@@ -76,7 +76,7 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define BOTTOM_SCORE_MIN_Y          (BOTTOM_SCORE_MAX_Y - SCORE_WID)
 #define BOTTOM_SCORE_MAX_Y          ARENA_MAX_Y
 
-#define MAX_SCORE                   7
+#define MAX_SCORE                   8
 
 /* Amount of allowable space for collisions with the sides of paddles */
 #define WIGGLE_ROOM                 2
