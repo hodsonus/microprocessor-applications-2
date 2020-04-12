@@ -61,3 +61,4 @@ config/*
 RemoteSystemsTempFiles/*
 */.launches/*
 lab5/CC3100SupportPackage/cc3100_usage/cc3100_usage.h
+lab5/CC3100SupportPackage/SL_Common/sl_common.h
