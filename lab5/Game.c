@@ -259,11 +259,13 @@ void CreateGame()
     gameState.players[TOP].position = TOP;
     gameState.players[TOP].color = PLAYER_BLUE;
     gameState.players[TOP].currentCenter = PADDLE_X_CENTER;
+    rawClientCenter=(PADDLE_X_CENTER<<PLAYER_CENTER_SHIFT_AMOUNT);
 
     // Host: bottom, red
     gameState.players[BOTTOM].position = BOTTOM;
     gameState.players[BOTTOM].color = PLAYER_RED;
     gameState.players[BOTTOM].currentCenter = PADDLE_X_CENTER;
+    rawHostCenter=(PADDLE_X_CENTER<<PLAYER_CENTER_SHIFT_AMOUNT);
 
     // Other variables
     gameState.numberOfBalls = 0;
@@ -282,35 +284,36 @@ void CreateGame()
     G8RTOS_SignalSemaphore(&LED_Mutex);
 
     // Receive a packet from the client
-    G8RTOS_WaitSemaphore(&WiFi_Mutex);
-    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
-    G8RTOS_SignalSemaphore(&WiFi_Mutex);
-    // Store the packet received
-    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-    clientInfo = tempClientInfo;
-    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
+//    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+//    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
+//    G8RTOS_SignalSemaphore(&WiFi_Mutex);
+//    // Store the packet received
+//    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+//    clientInfo = tempClientInfo;
+//    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
+//
+//    // Update Host SpecificPlayerInfo
+//    G8RTOS_WaitSemaphore(&GameState_Mutex);
+//    gameState.player.joined = 1;
+//    gameState.player.acknowledge = 1;
+//    tempGameState = gameState;
+//    G8RTOS_SignalSemaphore(&GameState_Mutex);
+//    // Send new game state
+//    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+//    SendData((uint8_t*)(&tempGameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
+//    G8RTOS_SignalSemaphore(&WiFi_Mutex);
+//
+//    // Receive a packet from the client (waiting for acknowledgment)
+//    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+//    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
+//    G8RTOS_SignalSemaphore(&WiFi_Mutex);
+//    // Store the packet received
+//    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+//    clientInfo = tempClientInfo;
+//    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
-    // Update Host SpecificPlayerInfo
-    G8RTOS_WaitSemaphore(&GameState_Mutex);
-    gameState.player.joined = 1;
-    gameState.player.acknowledge = 1;
-    tempGameState = gameState;
-    G8RTOS_SignalSemaphore(&GameState_Mutex);
-    // Send new game state
-    G8RTOS_WaitSemaphore(&WiFi_Mutex);
-    SendData((uint8_t*)(&tempGameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
-    G8RTOS_SignalSemaphore(&WiFi_Mutex);
-
-    // Receive a packet from the client (waiting for acknowledgment)
-    G8RTOS_WaitSemaphore(&WiFi_Mutex);
-    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
-    G8RTOS_SignalSemaphore(&WiFi_Mutex);
-    // Store the packet received
-    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-    clientInfo = tempClientInfo;
-    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
-
-    if (tempClientInfo.acknowledge)
+//    if (tempClientInfo.acknowledge)
+    if(true)
     {
         // Update LED to show connection
         // Blue LED = Connection Established
@@ -391,6 +394,13 @@ void ReceiveDataFromClient()
         G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
         // Empty client info packet
         clientInfo = tempClientInfo;
+        rawClientCenter += clientInfo.displacement;
+        if(rawClientCenter>MAX_RAW_PLAYER_CENTER){
+            rawClientCenter=MAX_RAW_PLAYER_CENTER;
+        }
+        else if(rawClientCenter<MIN_RAW_PLAYER_CENTER){
+            rawClientCenter=MIN_RAW_PLAYER_CENTER;
+        }
         G8RTOS_WaitSemaphore(&GameState_Mutex);
         // Update the player's current center with the displacement received from the client
         UpdatePlayerDisplacement(&clientInfo);
@@ -449,6 +459,14 @@ void ReadJoystickHost()
         G8RTOS_WaitSemaphore(&GameState_Mutex);
         gameState.player.displacement = js_x_data;
         G8RTOS_SignalSemaphore(&GameState_Mutex);
+
+        rawHostCenter+=js_x_data;
+        if(rawHostCenter>MAX_RAW_PLAYER_CENTER){
+            rawHostCenter=MAX_RAW_PLAYER_CENTER;
+        }
+        else if(rawHostCenter<MIN_RAW_PLAYER_CENTER){
+            rawHostCenter=MIN_RAW_PLAYER_CENTER;
+        }
 
         // Sleep for 10ms, by sleeping before updating the bottom player's position, it makes the game more fair between client and host
         G8RTOS_Sleep(10);
@@ -661,11 +679,13 @@ void EndOfGameHost()
     gameState.players[TOP].position = TOP;
     gameState.players[TOP].color = PLAYER_BLUE;
     gameState.players[TOP].currentCenter = PADDLE_X_CENTER;
+    rawClientCenter=(PADDLE_X_CENTER<<PLAYER_CENTER_SHIFT_AMOUNT);
 
     // Host: bottom, red
     gameState.players[BOTTOM].position = BOTTOM;
     gameState.players[BOTTOM].color = PLAYER_RED;
     gameState.players[BOTTOM].currentCenter = PADDLE_X_CENTER;
+    rawHostCenter=(PADDLE_X_CENTER<<PLAYER_CENTER_SHIFT_AMOUNT);
 
     // Other variables
     gameState.numberOfBalls = 0;
@@ -979,10 +999,23 @@ void DrawBallOnScreen(PrevBall_t *previousBall, Ball_t *currentBall)
 {
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Draw the new ball
-    LCD_DrawRectangle(currentBall->currentCenterX - BALL_SIZE_D2,
-                      currentBall->currentCenterX + BALL_SIZE_D2,
-                      currentBall->currentCenterY - BALL_SIZE_D2,
-                      currentBall->currentCenterY + BALL_SIZE_D2,
+    int16_t drawL, drawR, drawT, drawB;
+    drawL=currentBall->currentCenterX - BALL_SIZE_D2;
+    drawR=currentBall->currentCenterX + BALL_SIZE_D2;
+    drawT=currentBall->currentCenterY - BALL_SIZE_D2;
+    drawB=currentBall->currentCenterY + BALL_SIZE_D2;
+    if(drawL<=ARENA_MIN_X){
+        drawL=ARENA_MIN_X+1;
+        drawR=drawL+BALL_SIZE;
+    }
+    if(drawR>=ARENA_MAX_X){
+        drawR=ARENA_MAX_X-1;
+        drawL=drawR-BALL_SIZE;
+    }
+    LCD_DrawRectangle(drawL,
+                      drawR,
+                      drawT,
+                      drawB,
                       currentBall->color
     );
     G8RTOS_SignalSemaphore(&LCD_Mutex);
@@ -998,10 +1031,23 @@ void DeleteBallOnScreen(PrevBall_t * previousBall)
 {
     G8RTOS_WaitSemaphore(&LCD_Mutex);
     // Delete the old ball
-    LCD_DrawRectangle(previousBall->CenterX - BALL_SIZE_D2,
-                      previousBall->CenterX + BALL_SIZE_D2,
-                      previousBall->CenterY - BALL_SIZE_D2,
-                      previousBall->CenterY + BALL_SIZE_D2,
+    int16_t deleteL, deleteR, deleteT, deleteB;
+    deleteL=previousBall->CenterX - BALL_SIZE_D2;
+    deleteR=previousBall->CenterX + BALL_SIZE_D2;
+    deleteT=previousBall->CenterY - BALL_SIZE_D2;
+    deleteB=previousBall->CenterY + BALL_SIZE_D2;
+    if(deleteL<=ARENA_MIN_X){
+        deleteL=ARENA_MIN_X+1;
+        deleteR=deleteL+BALL_SIZE;
+    }
+    if(deleteR>=ARENA_MAX_X){
+        deleteR=ARENA_MAX_X-1;
+        deleteL=deleteR-BALL_SIZE;
+    }
+    LCD_DrawRectangle(deleteL,
+                      deleteR,
+                      deleteT,
+                      deleteB,
                       BACK_COLOR
     );
     G8RTOS_SignalSemaphore(&LCD_Mutex);
@@ -1147,12 +1193,20 @@ void AddCommonGameThreads()
 void UpdatePlayerDisplacement(SpecificPlayerInfo_t *player)
 {
     // Scale the raw (but zeroed) joystick ADC value
-    int32_t scaledDisplacement = (player->displacement) ;
-    scaledDisplacement *= ARENA_MAX_X;
-    scaledDisplacement /= JOYSTICK_SCALER;
+//    int32_t scaledDisplacement = (player->displacement) ;
+//    scaledDisplacement *= ARENA_MAX_X;
+//    scaledDisplacement /= JOYSTICK_SCALER;
 
     // Update the player's current center with the scaled displacement
-    gameState.players[player->playerNumber].currentCenter += (int16_t)scaledDisplacement;
+//    gameState.players[player->playerNumber].currentCenter += (int16_t)scaledDisplacement;
+    // Client
+    if((player->playerNumber)==TOP){
+        gameState.players[player->playerNumber].currentCenter=(int16_t)((rawClientCenter>>PLAYER_CENTER_SHIFT_AMOUNT)&0xFFFF);
+    }
+    // Host
+    else{
+        gameState.players[player->playerNumber].currentCenter=(int16_t)((rawHostCenter>>PLAYER_CENTER_SHIFT_AMOUNT)&0xFFFF);
+    }
 
     // Wraparound logic
     if (gameState.players[player->playerNumber].currentCenter > HORIZ_CENTER_MAX_PL)
