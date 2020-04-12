@@ -75,7 +75,7 @@ extern "C" {
  * SimpleLink device will connect to following AP when the application is executed
  */
 
-#define JOHN
+#define SHIDA
 
 #ifdef JOHN
     #define SSID_NAME       "FiOS-WY14J"         /* Access point name to connect to. */
