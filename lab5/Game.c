@@ -1010,8 +1010,11 @@ void UpdateBallOnScreen(PrevBall_t *previousBall, Ball_t *currentBall/*, uint16_
     // Delete the old ball
     DeleteBallOnScreen(previousBall);
 
+    G8RTOS_WaitSemaphore(&GameState_Mutex);
+    Ball_t tempCurrentBall=*currentBall;
+    G8RTOS_SignalSemaphore(&GameState_Mutex);
     // Draw the new ball
-    DrawBallOnScreen(previousBall, currentBall);
+    DrawBallOnScreen(previousBall, &tempCurrentBall);
 }
 
 /*
