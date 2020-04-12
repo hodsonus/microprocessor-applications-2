@@ -184,7 +184,7 @@ typedef struct
     GeneralPlayerInfo_t players[MAX_NUM_OF_PLAYERS];
     Ball_t balls[MAX_NUM_OF_BALLS];
     uint16_t numberOfBalls;
-    bool winner;
+    playerPosition winner;
     bool gameDone;
     uint8_t LEDScores[MAX_NUM_OF_PLAYERS];
     uint8_t overallScores[MAX_NUM_OF_PLAYERS];

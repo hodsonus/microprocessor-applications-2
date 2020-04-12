@@ -490,7 +490,7 @@ void MoveBall()
     if (rand() & 1) gameState.balls[curr].velocityY *= -1;
     gameState.balls[curr].color = INIT_BALL_COLOR;
 
-    ++gameState.numberOfBalls;
+    ++(gameState.numberOfBalls);
 
     G8RTOS_SignalSemaphore(&GameState_Mutex);
 
@@ -507,12 +507,12 @@ void MoveBall()
         // (1) If collision with wall occurs, flip x velocity and move ball in-bounds
         if (gameState.balls[curr].currentCenterX - BALL_SIZE_D2 < ARENA_MIN_X)
         {
-            gameState.balls[curr].currentCenterX = ARENA_MIN_X + (BALL_SIZE_D2 + 1);
+            gameState.balls[curr].currentCenterX = ARENA_MIN_X + (BALL_SIZE_D2 * 2);
             gameState.balls[curr].velocityX *= -1;
         }
         else if (gameState.balls[curr].currentCenterX + BALL_SIZE_D2 > ARENA_MAX_X)
         {
-            gameState.balls[curr].currentCenterX = ARENA_MAX_X - (BALL_SIZE_D2 + 1);
+            gameState.balls[curr].currentCenterX = ARENA_MAX_X - (BALL_SIZE_D2 * 2);
             gameState.balls[curr].velocityX *= -1;
         }
 
@@ -542,7 +542,7 @@ void MoveBall()
                     }
                 }
 
-                --gameState.numberOfBalls;
+                --(gameState.numberOfBalls);
                 gameState.balls[curr].alive = false;
 
                 G8RTOS_SignalSemaphore(&GameState_Mutex);
@@ -576,7 +576,7 @@ void MoveBall()
                     }
                 }
 
-                --gameState.numberOfBalls;
+                --(gameState.numberOfBalls);
                 gameState.balls[curr].alive = false;
 
                 G8RTOS_SignalSemaphore(&GameState_Mutex);
