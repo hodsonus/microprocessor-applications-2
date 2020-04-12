@@ -484,8 +484,10 @@ void MoveBall()
     gameState.balls[curr].alive = true;
     gameState.balls[curr].currentCenterX = ARENA_MIN_X + rand() / (RAND_MAX / (ARENA_MAX_X - ARENA_MIN_X + 1) + 1);
     gameState.balls[curr].currentCenterY = ARENA_MIN_Y + rand() / (RAND_MAX / (ARENA_MAX_Y - ARENA_MIN_Y + 1) + 1);
-    gameState.balls[curr].velocityX = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
-    gameState.balls[curr].velocityY = -MAX_BALL_VELO + rand() / (RAND_MAX / (2 * MAX_BALL_VELO + 1) + 1);
+    gameState.balls[curr].velocityX = ((rand() % MAX_BALL_VELO) + 1);
+    if (rand() & 1) gameState.balls[curr].velocityX *= -1;
+    gameState.balls[curr].velocityY = ((rand() % MAX_BALL_VELO) + 1);
+    if (rand() & 1) gameState.balls[curr].velocityY *= -1;
     gameState.balls[curr].color = INIT_BALL_COLOR;
 
     ++gameState.numberOfBalls;
@@ -505,12 +507,12 @@ void MoveBall()
         // (1) If collision with wall occurs, flip x velocity and move ball in-bounds
         if (gameState.balls[curr].currentCenterX - BALL_SIZE_D2 < ARENA_MIN_X)
         {
-            gameState.balls[curr].currentCenterX = ARENA_MIN_X + BALL_SIZE_D2 + 1;
+            gameState.balls[curr].currentCenterX = ARENA_MIN_X + (BALL_SIZE_D2 * 2);
             gameState.balls[curr].velocityX *= -1;
         }
         else if (gameState.balls[curr].currentCenterX + BALL_SIZE_D2 > ARENA_MAX_X)
         {
-            gameState.balls[curr].currentCenterX = ARENA_MAX_X - BALL_SIZE_D2 - 1;
+            gameState.balls[curr].currentCenterX = ARENA_MAX_X - (BALL_SIZE_D2 * 2);
             gameState.balls[curr].velocityX *= -1;
         }
 
@@ -603,10 +605,16 @@ void EndOfGameHost()
     G8RTOS_InitSemaphore(&GameState_Mutex, 1);
 
     // Clear screen with winner's color
-    G8RTOS_WaitSemaphore(&LCD_Mutex);
-    if (gameState.winner == TOP) LCD_Clear(PLAYER_BLUE);
-    else LCD_Clear(PLAYER_RED);
-    G8RTOS_SignalSemaphore(&LCD_Mutex);
+    if (gameState.winner == TOP)
+    {
+        LCD_Clear(PLAYER_BLUE);
+        ++gameState.overallScores[TOP];
+    }
+    else
+    {
+        LCD_Clear(PLAYER_RED);
+        ++gameState.overallScores[BOTTOM];
+    }
 
     // Print some message that waits for the host's action to start a new game
     LCD_Text(12, 100, "Press left to play again as the host.", LCD_WHITE);
@@ -644,12 +652,11 @@ void EndOfGameHost()
 
     // Other variables
     gameState.numberOfBalls = 0;
+    for (int i = 0; i < MAX_NUM_OF_BALLS; ++i) gameState.balls[i].alive = false;
     gameState.winner = 0;
     gameState.gameDone = 0;
     gameState.LEDScores[BOTTOM] = 0;
     gameState.LEDScores[TOP] = 0;
-    gameState.overallScores[BOTTOM] = 0;
-    gameState.overallScores[TOP] = 0;
 
     // Send notification to client, the client is just waiting on the host to start a new game
     SendData((uint8_t*)(&gameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
