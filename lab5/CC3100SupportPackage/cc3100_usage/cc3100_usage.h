@@ -31,7 +31,7 @@ typedef enum
     Host = 1
 } playerType;
 
-#define JOHN
+#define SHIDA
 
 #ifdef JOHN
     /* IP addressed of server side socket.
