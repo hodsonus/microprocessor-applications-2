@@ -44,7 +44,7 @@ typedef enum
     #define NO_OF_PACKETS          1                        // Number of packets to send out
 
     /* Static IP address for host (my board IP, need to change if first 3 numbers do not match the laptop's) */
-    #define CONFIG_IP       SL_IPV4_VAL(192,168,1,224)
+    #define CONFIG_IP       SL_IPV4_VAL(192,168,1,226)
     /* Subnet Mask for the station */
     #define AP_MASK         SL_IPV4_VAL(255,255,255,0)
     /* Default Gateway address (IP address of the router, can be found in System Preferences -> Network -> TCP/IP -> Router) */

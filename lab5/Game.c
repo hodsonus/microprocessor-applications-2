@@ -360,7 +360,7 @@ void SendDataToClient()
         // Host            S                 S                 S     ... (S=send)
         // Client    RS W  RE SL RS W  W  W  RE SL RS W  W  W  RE SL ... (RS=receive start, W=wait, RE=receive end, SL=sleep)
         // Sleep for 5ms (found experimentally to be a good amount of time for synchronization)
-        G8RTOS_Sleep(5);
+        G8RTOS_Sleep(6);
     }
 }
 
@@ -397,7 +397,7 @@ void ReceiveDataFromClient()
         // TODO - might have to make this shorter (like 1ms) so that the host will be ready to receive data when client sends one
         //        client send and host receive will eventually sync because the receive is a waiting loop
         // Sleep for 2ms (again found experimentally)
-        G8RTOS_Sleep(2);
+        G8RTOS_Sleep(1);
     }
 }
 
@@ -505,12 +505,12 @@ void MoveBall()
         // (1) If collision with wall occurs, flip x velocity and move ball in-bounds
         if (gameState.balls[curr].currentCenterX - BALL_SIZE_D2 < ARENA_MIN_X)
         {
-            gameState.balls[curr].currentCenterX = ARENA_MIN_X + BALL_SIZE_D2;
+            gameState.balls[curr].currentCenterX = ARENA_MIN_X + BALL_SIZE_D2 + 1;
             gameState.balls[curr].velocityX *= -1;
         }
         else if (gameState.balls[curr].currentCenterX + BALL_SIZE_D2 > ARENA_MAX_X)
         {
-            gameState.balls[curr].currentCenterX = ARENA_MAX_X - BALL_SIZE_D2;
+            gameState.balls[curr].currentCenterX = ARENA_MAX_X - BALL_SIZE_D2 - 1;
             gameState.balls[curr].velocityX *= -1;
         }
 
