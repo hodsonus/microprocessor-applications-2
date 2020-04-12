@@ -431,7 +431,7 @@ threadId_t G8RTOS_GetThreadId()
  */
 void G8RTOS_KillAllOtherThreads()
 {
-    for (int i = 0; i < NumberOfThreads; ++i)
+    for (int i = 0; i < MAX_THREADS; ++i)
     {
         if (&threadControlBlocks[i] != CurrentlyRunningThread) G8RTOS_KillThread(threadControlBlocks[i].thread_id);
     }
