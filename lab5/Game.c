@@ -614,15 +614,16 @@ void EndOfGameHost()
     // Port should still be initialized from the original HostVsClient decision
     // Waits for the host's button press
     P5->IFG &= ~BIT5;
-    while (!(P5->IFG & BIT5));
+    while (!(P5->IFG & BIT5))
+    {
+        // Send EOG packet
+        SendData((uint8_t*)(&gameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
+    }
     P5->IFG &= ~BIT5;
 
     // Reset game variables
-    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-    clientInfo.displacement=0;
-    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
+    clientInfo.displacement = 0;
 
-    G8RTOS_WaitSemaphore(&GameState_Mutex);
     // Host SpecificPlayerInfo
     gameState.player.IP_address = CONFIG_IP;
     gameState.player.playerNumber = BOTTOM;
@@ -650,14 +651,8 @@ void EndOfGameHost()
     gameState.overallScores[BOTTOM] = 0;
     gameState.overallScores[TOP] = 0;
 
-    GameState_t tempGameState = gameState;
-
-    G8RTOS_SignalSemaphore(&GameState_Mutex);
-
     // Send notification to client, the client is just waiting on the host to start a new game
-    G8RTOS_WaitSemaphore(&WiFi_Mutex);
-    SendData((uint8_t*)(&tempGameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
-    G8RTOS_SignalSemaphore(&WiFi_Mutex);
+    SendData((uint8_t*)(&gameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
 
     // Reinitialize the game and objects
     InitBoardState();
