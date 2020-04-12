@@ -163,6 +163,9 @@ void ReadJoystickClient()
        js_x_data -= js_x_bias;
        js_y_data -= js_y_bias;
 
+       js_x_data *= -1;
+       js_y_data *= -1;
+
        // Add Displacement to Self accordingly
        G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
        clientInfo.displacement = js_x_data;
@@ -438,6 +441,9 @@ void ReadJoystickHost()
         GetJoystickCoordinates(&js_x_data, &js_y_data);
         js_x_data -= js_x_bias;
         js_y_data -= js_y_bias;
+
+        js_x_data *= -1;
+        js_y_data *= -1;
 
         // Change self.displacement accordingly (you can experiment with how much you want to scale the ADC value)
         G8RTOS_WaitSemaphore(&GameState_Mutex);
