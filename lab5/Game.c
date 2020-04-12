@@ -284,36 +284,36 @@ void CreateGame()
     G8RTOS_SignalSemaphore(&LED_Mutex);
 
     // Receive a packet from the client
-//    G8RTOS_WaitSemaphore(&WiFi_Mutex);
-//    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
-//    G8RTOS_SignalSemaphore(&WiFi_Mutex);
-//    // Store the packet received
-//    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-//    clientInfo = tempClientInfo;
-//    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
-//
-//    // Update Host SpecificPlayerInfo
-//    G8RTOS_WaitSemaphore(&GameState_Mutex);
-//    gameState.player.joined = 1;
-//    gameState.player.acknowledge = 1;
-//    tempGameState = gameState;
-//    G8RTOS_SignalSemaphore(&GameState_Mutex);
-//    // Send new game state
-//    G8RTOS_WaitSemaphore(&WiFi_Mutex);
-//    SendData((uint8_t*)(&tempGameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
-//    G8RTOS_SignalSemaphore(&WiFi_Mutex);
-//
-//    // Receive a packet from the client (waiting for acknowledgment)
-//    G8RTOS_WaitSemaphore(&WiFi_Mutex);
-//    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
-//    G8RTOS_SignalSemaphore(&WiFi_Mutex);
-//    // Store the packet received
-//    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
-//    clientInfo = tempClientInfo;
-//    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
+    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
+    G8RTOS_SignalSemaphore(&WiFi_Mutex);
+    // Store the packet received
+    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+    clientInfo = tempClientInfo;
+    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
-//    if (tempClientInfo.acknowledge)
-    if(true)
+    // Update Host SpecificPlayerInfo
+    G8RTOS_WaitSemaphore(&GameState_Mutex);
+    gameState.player.joined = 1;
+    gameState.player.acknowledge = 1;
+    tempGameState = gameState;
+    G8RTOS_SignalSemaphore(&GameState_Mutex);
+    // Send new game state
+    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+    SendData((uint8_t*)(&tempGameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
+    G8RTOS_SignalSemaphore(&WiFi_Mutex);
+
+    // Receive a packet from the client (waiting for acknowledgment)
+    G8RTOS_WaitSemaphore(&WiFi_Mutex);
+    while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED );
+    G8RTOS_SignalSemaphore(&WiFi_Mutex);
+    // Store the packet received
+    G8RTOS_WaitSemaphore(&SpecificPlayerInfo_Mutex);
+    clientInfo = tempClientInfo;
+    G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
+
+    if (tempClientInfo.acknowledge)
+//    if(true)
     {
         // Update LED to show connection
         // Blue LED = Connection Established
