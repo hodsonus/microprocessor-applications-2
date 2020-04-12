@@ -507,12 +507,12 @@ void MoveBall()
         // (1) If collision with wall occurs, flip x velocity and move ball in-bounds
         if (gameState.balls[curr].currentCenterX - BALL_SIZE_D2 < ARENA_MIN_X)
         {
-            gameState.balls[curr].currentCenterX = ARENA_MIN_X + (BALL_SIZE_D2 * 2);
+            gameState.balls[curr].currentCenterX = ARENA_MIN_X + (BALL_SIZE_D2 + 1);
             gameState.balls[curr].velocityX *= -1;
         }
         else if (gameState.balls[curr].currentCenterX + BALL_SIZE_D2 > ARENA_MAX_X)
         {
-            gameState.balls[curr].currentCenterX = ARENA_MAX_X - (BALL_SIZE_D2 * 2);
+            gameState.balls[curr].currentCenterX = ARENA_MAX_X - (BALL_SIZE_D2 + 1);
             gameState.balls[curr].velocityX *= -1;
         }
 
@@ -526,15 +526,20 @@ void MoveBall()
             {
                 gameState.balls[curr].currentCenterY = BOTTOM_PADDLE_EDGE - WIGGLE_ROOM - BALL_SIZE_D2;
                 gameState.balls[curr].velocityY *= -1;
+                gameState.balls[curr].color = gameState.players[BOTTOM].color;
             }
             // (3) If the ball passes the boundary edge, adjust score, account for the game possibly ending, and kill self
             // Passing the boundary edge occurs when the ball center is not within the edges of the paddle
             else
             {
-                if (++gameState.LEDScores[TOP] > MAX_SCORE)
+                if (gameState.players[TOP].color == gameState.balls[curr].color)
                 {
-                    gameState.winner = TOP;
-                    gameState.gameDone = true;
+                    ++gameState.LEDScores[TOP];
+                    if (gameState.LEDScores[TOP] > MAX_SCORE)
+                    {
+                        gameState.winner = TOP;
+                        gameState.gameDone = true;
+                    }
                 }
 
                 --gameState.numberOfBalls;
@@ -555,15 +560,20 @@ void MoveBall()
             {
                 gameState.balls[curr].currentCenterY = TOP_PADDLE_EDGE + WIGGLE_ROOM + BALL_SIZE_D2;
                 gameState.balls[curr].velocityY *= -1;
+                gameState.balls[curr].color = gameState.players[TOP].color;
             }
             // (3) Else ball passes the boundary edge, adjust score, account for the game possibly ending, and kill self
             // Passing the boundary edge occurs when the ball center is not within the edges of the paddle
             else
             {
-                if (++gameState.LEDScores[BOTTOM] > MAX_SCORE)
+                if (gameState.players[BOTTOM].color == gameState.balls[curr].color)
                 {
-                    gameState.winner = BOTTOM;
-                    gameState.gameDone = true;
+                    ++gameState.LEDScores[BOTTOM];
+                    if (gameState.LEDScores[BOTTOM] > MAX_SCORE)
+                    {
+                        gameState.winner = BOTTOM;
+                        gameState.gameDone = true;
+                    }
                 }
 
                 --gameState.numberOfBalls;
@@ -626,6 +636,7 @@ void EndOfGameHost()
     {
         // Send EOG packet
         SendData((uint8_t*)(&gameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
+        DelayMs(5);
     }
     P5->IFG &= ~BIT5;
 
