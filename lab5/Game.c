@@ -609,7 +609,7 @@ void EndOfGameHost()
     G8RTOS_SignalSemaphore(&LCD_Mutex);
 
     // Print some message that waits for the host's action to start a new game
-    LCD_Text(8, 100, "Press top to play again as the host.", LCD_WHITE);
+    LCD_Text(12, 100, "Press left to play again as the host.", LCD_WHITE);
 
     // Port should still be initialized from the original HostVsClient decision
     // Waits for the host's button press
