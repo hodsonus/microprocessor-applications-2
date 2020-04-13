@@ -259,13 +259,13 @@ void CreateGame()
     gameState.players[TOP].position = TOP;
     gameState.players[TOP].color = PLAYER_BLUE;
     gameState.players[TOP].currentCenter = PADDLE_X_CENTER;
-    rawClientCenter=(PADDLE_X_CENTER<<PLAYER_CENTER_SHIFT_AMOUNT);
+    rawClientCenter = (PADDLE_X_CENTER << PLAYER_CENTER_SHIFT_AMOUNT);
 
     // Host: bottom, red
     gameState.players[BOTTOM].position = BOTTOM;
     gameState.players[BOTTOM].color = PLAYER_RED;
     gameState.players[BOTTOM].currentCenter = PADDLE_X_CENTER;
-    rawHostCenter=(PADDLE_X_CENTER<<PLAYER_CENTER_SHIFT_AMOUNT);
+    rawHostCenter = (PADDLE_X_CENTER << PLAYER_CENTER_SHIFT_AMOUNT);
 
     // Other variables
     gameState.numberOfBalls = 0;
@@ -313,7 +313,6 @@ void CreateGame()
     G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
     if (tempClientInfo.acknowledge)
-//    if(true)
     {
         // Update LED to show connection
         // Blue LED = Connection Established
@@ -390,21 +389,23 @@ void ReceiveDataFromClient()
         // Empty client info packet
         clientInfo = tempClientInfo;
         rawClientCenter += clientInfo.displacement;
-        if(rawClientCenter>MAX_RAW_PLAYER_CENTER){
-            rawClientCenter=MAX_RAW_PLAYER_CENTER;
+        if(rawClientCenter > MAX_RAW_PLAYER_CENTER)
+        {
+            rawClientCenter = MAX_RAW_PLAYER_CENTER;
         }
-        else if(rawClientCenter<MIN_RAW_PLAYER_CENTER){
-            rawClientCenter=MIN_RAW_PLAYER_CENTER;
+        else if(rawClientCenter < MIN_RAW_PLAYER_CENTER)
+        {
+            rawClientCenter = MIN_RAW_PLAYER_CENTER;
         }
         G8RTOS_WaitSemaphore(&GameState_Mutex);
+
         // Update the player's current center with the displacement received from the client
         UpdatePlayerDisplacement(&clientInfo);
         G8RTOS_SignalSemaphore(&GameState_Mutex);
         G8RTOS_SignalSemaphore(&SpecificPlayerInfo_Mutex);
 
-        // TODO - might have to make this shorter (like 1ms) so that the host will be ready to receive data when client sends one
-        //        client send and host receive will eventually sync because the receive is a waiting loop
-        // Sleep for 2ms (again found experimentally)
+        // Sleep for 1ms (again found experimentally)
+        // Was originally 2ms, but 1ms was found to work better
         G8RTOS_Sleep(1);
     }
 }
@@ -455,12 +456,14 @@ void ReadJoystickHost()
         gameState.player.displacement = js_x_data;
         G8RTOS_SignalSemaphore(&GameState_Mutex);
 
-        rawHostCenter+=js_x_data;
-        if(rawHostCenter>MAX_RAW_PLAYER_CENTER){
-            rawHostCenter=MAX_RAW_PLAYER_CENTER;
+        rawHostCenter += js_x_data;
+        if (rawHostCenter > MAX_RAW_PLAYER_CENTER)
+        {
+            rawHostCenter = MAX_RAW_PLAYER_CENTER;
         }
-        else if(rawHostCenter<MIN_RAW_PLAYER_CENTER){
-            rawHostCenter=MIN_RAW_PLAYER_CENTER;
+        else if (rawHostCenter < MIN_RAW_PLAYER_CENTER)
+        {
+            rawHostCenter = MIN_RAW_PLAYER_CENTER;
         }
 
         // Sleep for 10ms, by sleeping before updating the bottom player's position, it makes the game more fair between client and host
@@ -1187,19 +1190,14 @@ void AddCommonGameThreads()
  */
 void UpdatePlayerDisplacement(SpecificPlayerInfo_t *player)
 {
-    // Scale the raw (but zeroed) joystick ADC value
-//    int32_t scaledDisplacement = (player->displacement) ;
-//    scaledDisplacement *= ARENA_MAX_X;
-//    scaledDisplacement /= JOYSTICK_SCALER;
-
-    // Update the player's current center with the scaled displacement
-//    gameState.players[player->playerNumber].currentCenter += (int16_t)scaledDisplacement;
     // Client
-    if((player->playerNumber)==TOP){
+    if((player->playerNumber)==TOP)
+    {
         gameState.players[player->playerNumber].currentCenter=(int16_t)((rawClientCenter>>PLAYER_CENTER_SHIFT_AMOUNT)&0xFFFF);
     }
     // Host
-    else{
+    else
+    {
         gameState.players[player->playerNumber].currentCenter=(int16_t)((rawHostCenter>>PLAYER_CENTER_SHIFT_AMOUNT)&0xFFFF);
     }
 
