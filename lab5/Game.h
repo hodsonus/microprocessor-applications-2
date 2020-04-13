@@ -120,7 +120,7 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define DRAWOBJ_PRIO                10
 
 /* Adding resolution to joystick */
-#define PLAYER_CENTER_SHIFT_AMOUNT  11   //TODO - find right amount by experiment
+#define PLAYER_CENTER_SHIFT_AMOUNT  11
 #define MAX_RAW_PLAYER_CENTER       ((HORIZ_CENTER_MAX_PL-1)<<PLAYER_CENTER_SHIFT_AMOUNT)
 #define MIN_RAW_PLAYER_CENTER       ((HORIZ_CENTER_MIN_PL+1)<<PLAYER_CENTER_SHIFT_AMOUNT)
 

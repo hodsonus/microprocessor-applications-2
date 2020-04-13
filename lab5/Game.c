@@ -359,14 +359,9 @@ void SendDataToClient()
         // If game is done, add EndOfGameHost thread with highest priority
         if (tempGameState.gameDone) G8RTOS_AddThread(&EndOfGameHost, MAX_PRIO, "EOG Host");
 
-
-        // TODO - might have to make this longer (like 6ms) so that when host send data, client will always be ready to receive
-        //        client receive and host send will eventually sync because the receive is a waiting loop (not so sure, but it seems to be this way)
-        //           0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
-        // Host            S                 S                 S     ... (S=send)
-        // Client    RS W  RE SL RS W  W  W  RE SL RS W  W  W  RE SL ... (RS=receive start, W=wait, RE=receive end, SL=sleep)
-        // Sleep for 5ms (found experimentally to be a good amount of time for synchronization)
-        G8RTOS_Sleep(6);
+        // Sleep for 16ms (found experimentally to be a good amount of time for synchronization)
+        // Was previously 5ms, but this led to large buffers and an unplayable game
+        G8RTOS_Sleep(16);
     }
 }
 
