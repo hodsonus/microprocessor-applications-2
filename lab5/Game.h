@@ -115,7 +115,7 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define GENBALL_PRIO                55
 #define JOYSTICK_PRIO               50
 #define SENDDATA_PRIO               50
-#define RECEIVEDATA_PRIO            50
+#define RECEIVEDATA_PRIO            45
 #define MOVELED_PRIO                20
 #define DRAWOBJ_PRIO                10
 
