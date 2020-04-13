@@ -658,7 +658,7 @@ void EndOfGameHost()
     {
         // Send EOG packet
         SendData((uint8_t*)(&gameState), HOST_IP_ADDR, sizeof(GameState_t)/sizeof(uint8_t));
-        DelayMs(5);
+        DelayMs(16);
     }
     P5->IFG &= ~BIT5;
 
