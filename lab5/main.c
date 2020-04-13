@@ -15,8 +15,6 @@
 #define USING_TP true
 #define HOST_OR_CLIENT Host
 
-void latencyTest(void);
-
 /**
  * main.c
  */
@@ -29,42 +27,10 @@ void main(void)
     srand(time(NULL));
 
     // Add the thread that bootstraps the game.
-//    G8RTOS_AddThread(&HostVsClient, 0, "host vs client");
-    G8RTOS_AddThread(&latencyTest, 0, "host vs client");
+    G8RTOS_AddThread(&HostVsClient, 0, "host vs client");
 
     // Launch the OS!
     G8RTOS_Launch();
-}
-
-int elapsedTime;
-
-void latencyTest(void)
-{
-    while (1)
-    {
-        SpecificPlayerInfo_t tempClientInfo = {
-                            CONFIG_IP,     // IP Address
-                            0,             // displacement
-                            TOP,           // playerNumber
-                            1,             // ready
-                            0,             // joined
-                            0              // acknowledge
-                };
-
-        // Start timer
-        int startTime = SystemTime;
-
-        // Send packet to Shida's board
-        SendData((uint8_t*)(&tempClientInfo), HOST_IP_ADDR, sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t));
-
-        // Receive packet from Shida's board
-        while( ReceiveData((uint8_t*)(&tempClientInfo), sizeof(SpecificPlayerInfo_t)/sizeof(uint8_t)) == NOTHING_RECEIVED);
-
-        // Stop timer
-        elapsedTime = SystemTime - startTime;
-
-        DelayMs(5);
-    }
 }
 
 /* ---------------------------------------- MAIN ---------------------------------------- */
