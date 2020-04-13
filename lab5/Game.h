@@ -115,9 +115,14 @@ semaphore_t LED_Mutex, LCD_Mutex, WiFi_Mutex, SpecificPlayerInfo_Mutex, GameStat
 #define GENBALL_PRIO                55
 #define JOYSTICK_PRIO               50
 #define SENDDATA_PRIO               50
-#define RECEIVEDATA_PRIO            50
-#define MOVELED_PRIO                50
-#define DRAWOBJ_PRIO                50
+#define RECEIVEDATA_PRIO            45
+#define MOVELED_PRIO                20
+#define DRAWOBJ_PRIO                10
+
+/* Adding resolution to joystick */
+#define PLAYER_CENTER_SHIFT_AMOUNT  11
+#define MAX_RAW_PLAYER_CENTER       ((HORIZ_CENTER_MAX_PL-1)<<PLAYER_CENTER_SHIFT_AMOUNT)
+#define MIN_RAW_PLAYER_CENTER       ((HORIZ_CENTER_MIN_PL+1)<<PLAYER_CENTER_SHIFT_AMOUNT)
 
 /* Enums for player colors */
 typedef enum
@@ -215,6 +220,8 @@ SpecificPlayerInfo_t clientInfo;
 GameState_t gameState;
 PrevBall_t prevBalls[MAX_NUM_OF_BALLS];
 PrevPlayer_t prevPlayers[MAX_NUM_OF_PLAYERS];
+
+int32_t rawHostCenter, rawClientCenter;
 /*********************************************** Global Variables ********************************************************************/
 
 /*********************************************** Client Threads *********************************************************************/
