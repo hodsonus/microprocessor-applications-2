@@ -120,7 +120,7 @@ void ReceiveDataFromHost()
        if (tempGameState.gameDone) G8RTOS_AddThread(&EndOfGameClient, MAX_PRIO, "End Client");
 
        // Sleep for 5ms
-       G8RTOS_Sleep(5);
+       G8RTOS_Sleep(2);
    }
 }
 
@@ -360,7 +360,7 @@ void SendDataToClient()
 
         // Sleep for 16ms (found experimentally to be a good amount of time for synchronization)
         // Was previously 5ms, but this led to large buffers and an unplayable game
-        G8RTOS_Sleep(16);
+        G8RTOS_Sleep(5);
     }
 }
 
